@@ -1,0 +1,27 @@
+buildscript {
+    //dependencies.gradle에 정의된 내용을 모든 프로젝트에서 사용할 수 있도록 한다.
+    apply from: file('dependencies.gradle')
+
+    repositories {
+        //그래들 빌드 플러그인 3.0 이후 버전은 Google Maven Repository를 통해 제공된다.
+        google()
+        jcenter()
+    }
+
+    dependencies {
+        //dependencies.gradle 내 정의된 값을 참조한다.
+        classpath "com.android.tools.build:gradle:$androidPluginVersion"
+    }
+}
+
+allprojects {
+    repositories {
+        //서포트 라이브러리 26.0.0 이후 버전은 Google Maven Repository를 통해 제공된다.
+        google()
+        jcenter()
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
