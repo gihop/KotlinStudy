@@ -11,6 +11,9 @@ buildscript {
     dependencies {
         //dependencies.gradle 내 정의된 값을 참조한다.
         classpath "com.android.tools.build:gradle:$androidPluginVersion"
+
+        //코틀린 그래들 플러그인을 추가한다.
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
     }
 }
 

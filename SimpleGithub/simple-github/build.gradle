@@ -1,5 +1,11 @@
 apply plugin: 'com.android.application'
 
+//코틀린 안드로이드 플러그인을 적용한다.
+apply plugin: 'kotlin-android'
+
+//코틀린 코드에서 어노테이션 프로세싱을 사용할 수 있도록 kotlin-kapt 플러그인을 추가로 적용한다.
+apply plugin: 'kotlin-kapt'
+
 android {
     //dependencies.gradle에 정의된 값을 참조한다.
     compileSdkVersion rootProject.ext.compileSdkVersion
@@ -17,6 +23,11 @@ android {
 
         buildConfigField "String", "GITHUB_CLIENT_SECRET",
                 project.properties["GITHUB_CLIENT_SECRET"] ?: "\"NOT_FOUND\""
+
+        //코틀린 코드를 저장할 폴더를 소스 디렉터리로 등록한다.
+        sourceSets{
+            main.java.srcDirs += 'src/main/kotlin'
+        }
     }
 
     buildTypes {
@@ -40,4 +51,10 @@ dependencies {
     implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
 
     annotationProcessor "com.github.bumptech.glide:compiler:$glideVersion"
+
+    //코틀린 표준 라이브러리를 의존성에 추가한다.
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+
+    //코틀린 어노테이션 프로세서에서 처리될 수 있도록 의존성에 추가한다.
+    kapt "com.github.bumptech.glide:compiler:$glideVersion"
 }
