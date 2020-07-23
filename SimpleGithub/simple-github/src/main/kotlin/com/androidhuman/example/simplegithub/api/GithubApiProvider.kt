@@ -10,61 +10,64 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.IOException
 
-object GithubApiProvider {
-    fun provideAuthApi(): AuthApi {
-        return Retrofit.Builder()
-                .baseUrl("https://github.com/")
-                .client(provideOkHttpClient(provideLoggingInterceptor(), null))
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
-                .create(AuthApi::class.java)
-    }
+//GithubApiProvider 클래스에 포함된 함수에서는 필요한 인자를 함수의 인자로 받기만 할 뿐, 클래스 단위에서 공용으로 사용하는 객체가 없다.
+//따라서 싱글톤 클래스를 제거하고 패키지 단위 함수로 다시 선언한다.
 
-    fun provideGithubApi(context: Context): GithubApi {
-        return Retrofit.Builder()
-                .baseUrl("https://api.github.com/")
-                .client(provideOkHttpClient(provideLoggingInterceptor(),
-                        provideAuthInterceptor(provideAuthTokenProvider(context))))
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
-                .create(GithubApi::class.java)
-    }
+//함수 내부에서 변수나 값을 선언하거나 연산을 수행하는 부분 없이, 생성된 객체를 반환하는 코드로만 구성되어 있는 함수들은 단일 표현식 형태로 바꾼다.
+fun provideAuthApi(): AuthApi
+    = Retrofit.Builder()
+        .baseUrl("https://github.com/")
+        .client(provideOkHttpClient(provideLoggingInterceptor(), null))
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+        .create(AuthApi::class.java)
 
-    private fun provideOkHttpClient(
-            interceptor: HttpLoggingInterceptor,
-            authInterceptor: AuthInterceptor?): OkHttpClient {
-        val b = OkHttpClient.Builder()
-        if (null != authInterceptor) {
-            b.addInterceptor(authInterceptor)
-        }
-        b.addInterceptor(interceptor)
-        return b.build()
-    }
 
-    private fun provideLoggingInterceptor(): HttpLoggingInterceptor {
-        val interceptor = HttpLoggingInterceptor()
-        interceptor.level = HttpLoggingInterceptor.Level.BODY
-        return interceptor
-    }
+fun provideGithubApi(context: Context): GithubApi
+    = Retrofit.Builder()
+        .baseUrl("https://api.github.com/")
+        .client(provideOkHttpClient(provideLoggingInterceptor(),
+                provideAuthInterceptor(provideAuthTokenProvider(context))))
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+        .create(GithubApi::class.java)
 
-    private fun provideAuthInterceptor(provider: AuthTokenProvider): AuthInterceptor {
-        val token = provider.token ?: throw IllegalStateException("authToken cannot be null.")
-        return AuthInterceptor(token)
-    }
-
-    private fun provideAuthTokenProvider(context: Context): AuthTokenProvider {
-        return AuthTokenProvider(context.applicationContext)
-    }
-
-    internal class AuthInterceptor(private val token: String) : Interceptor {
-        @Throws(IOException::class)
-        override fun intercept(chain: Interceptor.Chain): Response {
-            val original = chain.request()
-            val b = original.newBuilder()
-                    .addHeader("Authorization", "token $token")
-            val request = b.build()
-            return chain.proceed(request)
+//apply()나 run()과 같은 범위 지정 함수를 사용하면 함수 내부의 변수 선언을 완전히 제거할 수 있으며,
+//이 경우 함수 내부에 객체를 반환하는 코드만 남게되므로 이 또한 단일 표현식으로 표현할 수 있다.
+private fun provideOkHttpClient(
+        interceptor: HttpLoggingInterceptor,
+        authInterceptor: AuthInterceptor?): OkHttpClient
+        = OkHttpClient.Builder()
+        .run(){
+            if (null != authInterceptor) {
+                addInterceptor(authInterceptor)
+            }
+            addInterceptor(interceptor)
+            build()
         }
 
+//apply() 함수로 인스턴스 생성과 프로퍼티 값 변경을 동시에 수행한다.
+private fun provideLoggingInterceptor(): HttpLoggingInterceptor
+     = HttpLoggingInterceptor().apply{ level = HttpLoggingInterceptor.Level.BODY }
+
+private fun provideAuthInterceptor(provider: AuthTokenProvider): AuthInterceptor {
+    val token = provider.token ?: throw IllegalStateException("authToken cannot be null.")
+    return AuthInterceptor(token)
+}
+
+private fun provideAuthTokenProvider(context: Context): AuthTokenProvider
+    = AuthTokenProvider(context.applicationContext)
+
+
+internal class AuthInterceptor(private val token: String) : Interceptor {
+    @Throws(IOException::class)
+    override fun intercept(chain: Interceptor.Chain)
+            //with() 함수와 run() 함수로 추가 변수 선언을 제거한다.
+            : Response  = with(chain){
+        val newRequest = request().newBuilder().run{
+            addHeader("Authorization", "token " + token)
+            build()
+        }
+        proceed(newRequest)
     }
 }
