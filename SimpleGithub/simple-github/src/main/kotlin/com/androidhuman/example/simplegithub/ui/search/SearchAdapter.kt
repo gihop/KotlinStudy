@@ -64,6 +64,7 @@ class SearchAdapter : RecyclerView.Adapter<SearchAdapter.RepositoryHolder>() {
         var tvLanguage: TextView
 
         init {
+            //클래스 생성자 호출 시 클래스 내 프로퍼티의 값을 할당한다.
             ivProfile = itemView.findViewById(R.id.ivItemRepositoryProfile)
             tvName = itemView.findViewById(R.id.tvItemRepositoryName)
             tvLanguage = itemView.findViewById(R.id.tvItemRepositoryLanguage)

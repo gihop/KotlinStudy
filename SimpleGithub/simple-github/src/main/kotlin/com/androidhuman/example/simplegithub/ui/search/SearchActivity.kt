@@ -24,7 +24,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class SearchActivity : AppCompatActivity(), ItemClickListener {
+class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
     internal lateinit var rvList: RecyclerView
     internal lateinit var progress: ProgressBar
     internal lateinit var tvMessage: TextView
@@ -80,10 +80,10 @@ class SearchActivity : AppCompatActivity(), ItemClickListener {
         return super.onOptionsItemSelected(item)
     }
 
-    override fun onItemClick(repository: GithubRepo) {
+    override fun onItemClick(repository: GithubRepo?) {
         val intent = Intent(this, RepositoryActivity::class.java)
-        intent.putExtra(RepositoryActivity.KEY_USER_LOGIN, repository.owner.login)
-        intent.putExtra(RepositoryActivity.KEY_REPO_NAME, repository.name)
+        intent.putExtra(RepositoryActivity.KEY_USER_LOGIN, repository?.owner?.login)
+        intent.putExtra(RepositoryActivity.KEY_REPO_NAME, repository?.name)
         startActivity(intent)
     }
 
@@ -100,8 +100,8 @@ class SearchActivity : AppCompatActivity(), ItemClickListener {
                 hideProgress()
                 val searchResult = response.body()
                 if (response.isSuccessful && null != searchResult) {
-                    adapter!!.setItems(searchResult.items)
-                    adapter!!.notifyDataSetChanged()
+                    adapter.setItems(searchResult.items)
+                    adapter.notifyDataSetChanged()
                     if (0 == searchResult.totalCount) {
                         showError(getString(R.string.no_search_result))
                     }
@@ -126,34 +126,34 @@ class SearchActivity : AppCompatActivity(), ItemClickListener {
 
     private fun hideSoftKeyboard() {
         val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.hideSoftInputFromWindow(searchView!!.windowToken, 0)
+        imm.hideSoftInputFromWindow(searchView.windowToken, 0)
     }
 
     private fun collapseSearchView() {
-        menuSearch!!.collapseActionView()
+        menuSearch.collapseActionView()
     }
 
     private fun clearResults() {
-        adapter!!.clearItems()
-        adapter!!.notifyDataSetChanged()
+        adapter.clearItems()
+        adapter.notifyDataSetChanged()
     }
 
     private fun showProgress() {
-        progress!!.visibility = View.VISIBLE
+        progress.visibility = View.VISIBLE
     }
 
     private fun hideProgress() {
-        progress!!.visibility = View.GONE
+        progress.visibility = View.GONE
     }
 
     private fun showError(message: String?) {
         //message가 널 값인 경우 "Unexpected error." 메시지를 표시한다.
-        tvMessage!!.text = message ?: "Unexpected error."
-        tvMessage!!.visibility = View.VISIBLE
+        tvMessage.text = message ?: "Unexpected error."
+        tvMessage.visibility = View.VISIBLE
     }
 
     private fun hideError() {
-        tvMessage!!.text = ""
-        tvMessage!!.visibility = View.GONE
+        tvMessage.text = ""
+        tvMessage.visibility = View.GONE
     }
 }

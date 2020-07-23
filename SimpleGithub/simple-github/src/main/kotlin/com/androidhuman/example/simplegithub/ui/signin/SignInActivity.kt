@@ -45,7 +45,7 @@ class SignInActivity : AppCompatActivity() {
         })
         api = GithubApiProvider.provideAuthApi()
         authTokenProvider = AuthTokenProvider(this)
-        if (null != authTokenProvider!!.token) {
+        if (null != authTokenProvider.token) {
             launchMainActivity()
         }
     }
@@ -66,7 +66,7 @@ class SignInActivity : AppCompatActivity() {
 
     private fun getAccessToken(code: String) {
         showProgress()
-        accessTokenCall = api!!.getAccessToken(
+        accessTokenCall = api.getAccessToken(
                 BuildConfig.GITHUB_CLIENT_ID, BuildConfig.GITHUB_CLIENT_SECRET, code)
 
         //Call 인터페이스를 구현하는 익명 클래스의 인스턴스를 생성한다.
@@ -76,7 +76,7 @@ class SignInActivity : AppCompatActivity() {
                 hideProgress()
                 val token = response.body()
                 if (response.isSuccessful && null != token) {
-                    authTokenProvider!!.updateToken(token.accessToken)
+                    authTokenProvider.updateToken(token.accessToken)
                     launchMainActivity()
                 } else {
                     showError(IllegalStateException(
@@ -92,13 +92,13 @@ class SignInActivity : AppCompatActivity() {
     }
 
     private fun showProgress() {
-        btnStart!!.visibility = View.GONE
-        progress!!.visibility = View.VISIBLE
+        btnStart.visibility = View.GONE
+        progress.visibility = View.VISIBLE
     }
 
     private fun hideProgress() {
-        btnStart!!.visibility = View.VISIBLE
-        progress!!.visibility = View.GONE
+        btnStart.visibility = View.VISIBLE
+        progress.visibility = View.GONE
     }
 
     private fun showError(throwable: Throwable) {
