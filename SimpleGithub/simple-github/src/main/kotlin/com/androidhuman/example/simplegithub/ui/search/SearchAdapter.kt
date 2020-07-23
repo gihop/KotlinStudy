@@ -6,11 +6,11 @@ import android.support.v7.widget.RecyclerView
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.TextView
 import com.androidhuman.example.simplegithub.R
 import com.androidhuman.example.simplegithub.api.model.GithubRepo
 import com.androidhuman.example.simplegithub.ui.GlideApp
+import kotlinx.android.synthetic.main.activity_repository.view.*
+import kotlinx.android.synthetic.main.item_repository.view.*
 import java.util.*
 
 class SearchAdapter : RecyclerView.Adapter<SearchAdapter.RepositoryHolder>() {
@@ -24,17 +24,22 @@ class SearchAdapter : RecyclerView.Adapter<SearchAdapter.RepositoryHolder>() {
     override fun onBindViewHolder(holder: RepositoryHolder, position: Int) {
         //items.get(position) 대신 배열 인덱스 접근 연산자를 사용한다.
         val repo = items[position]
-        GlideApp.with(holder.itemView.context)
-                .load(repo.owner.avatarUrl)
-                .placeholder(placeholder)
-                .into(holder.ivProfile)
-        holder.tvName.text = repo.fullName
-        holder.tvLanguage.text = if (TextUtils.isEmpty(repo.language)) holder.itemView.context.getText(R.string.no_language_specified) else repo.language
+        //with() 함수를 사용하여 holder.itemView를 여러번 호출하지 않도록 한다.
+        with(holder.itemView) {
+            GlideApp.with(context)
+                    .load(repo.owner.avatarUrl)
+                    .placeholder(placeholder)
+                    .into(ivActivityRepositoryProfile)
+            tvItemRepositoryName.text = repo.fullName
+            tvItemRepositoryLanguage.text = if (TextUtils.isEmpty(repo.language))
+                context.getText(R.string.no_language_specified)
+            else repo.language
 
-        //View.OnClickListener의 본체를 람다 표현식으로 작성한다.
-        holder.itemView.setOnClickListener {
-            if (null != listener) {
-                listener!!.onItemClick(repo)
+            //View.OnClickListener의 본체를 람다 표현식으로 작성한다.
+            setOnClickListener {
+                if (null != listener) {
+                    listener!!.onItemClick(repo)
+                }
             }
         }
     }
@@ -43,7 +48,7 @@ class SearchAdapter : RecyclerView.Adapter<SearchAdapter.RepositoryHolder>() {
         return items.size
     }
 
-    fun setItems(items: MutableList<GithubRepo>) {
+    fun setItems(items: List<GithubRepo>) {
         //인자로 받은 리스트의 형태를 어댑터 내부에서 사용하는 리스트 형태(내부 자료 변경이 가능한 형태)로 변환해줘야 한다.
         this.items = items.toMutableList()
     }
@@ -57,20 +62,7 @@ class SearchAdapter : RecyclerView.Adapter<SearchAdapter.RepositoryHolder>() {
     }
 
     class RepositoryHolder(parent: ViewGroup) : RecyclerView.ViewHolder(LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_repository, parent, false)) {
-
-        //init 블록에서 프로퍼티의 값을 설정해 주고 있으므로 여기에서 값을 할당하지 않아도 컴파일 에러가 발생하지 않는다.
-        var ivProfile: ImageView
-        var tvName: TextView
-        var tvLanguage: TextView
-
-        init {
-            //클래스 생성자 호출 시 클래스 내 프로퍼티의 값을 할당한다.
-            ivProfile = itemView.findViewById(R.id.ivItemRepositoryProfile)
-            tvName = itemView.findViewById(R.id.tvItemRepositoryName)
-            tvLanguage = itemView.findViewById(R.id.tvItemRepositoryLanguage)
-        }
-    }
+            .inflate(R.layout.item_repository, parent, false))
 
     interface ItemClickListener {
         fun onItemClick(repository: GithubRepo?)
