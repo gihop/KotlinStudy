@@ -24,10 +24,6 @@ android {
         buildConfigField "String", "GITHUB_CLIENT_SECRET",
                 project.properties["GITHUB_CLIENT_SECRET"] ?: "\"NOT_FOUND\""
 
-        //코틀린 코드를 저장할 폴더를 소스 디렉터리로 등록한다.
-        sourceSets{
-            main.java.srcDirs += 'src/main/kotlin'
-        }
     }
 
     buildTypes {
@@ -35,6 +31,10 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+
+    sourceSets{
+        main.java.srcDirs += 'src/main/kotlin'
     }
 }
 
