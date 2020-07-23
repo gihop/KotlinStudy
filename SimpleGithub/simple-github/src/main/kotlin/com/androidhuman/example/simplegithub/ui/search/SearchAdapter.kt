@@ -44,7 +44,8 @@ class SearchAdapter : RecyclerView.Adapter<SearchAdapter.RepositoryHolder>() {
     }
 
     fun setItems(items: MutableList<GithubRepo>) {
-        this.items = items
+        //인자로 받은 리스트의 형태를 어댑터 내부에서 사용하는 리스트 형태(내부 자료 변경이 가능한 형태)로 변환해줘야 한다.
+        this.items = items.toMutableList()
     }
 
     fun setItemClickListener(listener: ItemClickListener?) {
