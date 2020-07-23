@@ -21,16 +21,18 @@ import retrofit2.Callback
 import retrofit2.Response
 
 class SignInActivity : AppCompatActivity() {
-    var btnStart: Button? = null
-    var progress: ProgressBar? = null
-    var api: AuthApi? = null
-    var authTokenProvider: AuthTokenProvider? = null
-    var accessTokenCall: Call<GithubAccessToken>? = null
+    internal lateinit var btnStart: Button
+    internal lateinit var progress: ProgressBar
+    internal lateinit var api: AuthApi
+    internal lateinit var authTokenProvider: AuthTokenProvider
+    internal lateinit var accessTokenCall: Call<GithubAccessToken>
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sign_in)
         btnStart = findViewById(R.id.btnActivitySignInStart)
         progress = findViewById(R.id.pbActivitySignIn)
+
+        //View.OnClickListener의 본체를 람다 표현식으로 작성한다.
         btnStart.setOnClickListener(View.OnClickListener {
             val authUri = Uri.Builder().scheme("https").authority("github.com")
                     .appendPath("login")
@@ -51,7 +53,13 @@ class SignInActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         showProgress()
+
+        //엘비스 연산자를 사용하여 널 값을 검사한다.
+        //intent.data가 널이라면 IllegalStateException 예외를 발생시킨다.
         val uri = intent.data ?: throw IllegalArgumentException("No data exists")
+
+        //엘비스 연산자를 사용하여 널 값을 검사한다.
+        //uri.getQueryParameter("code") 반환값이 널이라면 IllegalStateException 예외를 발생시킨다.
         val code = uri.getQueryParameter("code") ?: throw IllegalStateException("No code exists")
         getAccessToken(code)
     }
@@ -60,6 +68,8 @@ class SignInActivity : AppCompatActivity() {
         showProgress()
         accessTokenCall = api!!.getAccessToken(
                 BuildConfig.GITHUB_CLIENT_ID, BuildConfig.GITHUB_CLIENT_SECRET, code)
+
+        //Call 인터페이스를 구현하는 익명 클래스의 인스턴스를 생성한다.
         accessTokenCall.enqueue(object : Callback<GithubAccessToken?> {
             override fun onResponse(call: Call<GithubAccessToken?>,
                                     response: Response<GithubAccessToken?>) {

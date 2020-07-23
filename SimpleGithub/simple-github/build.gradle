@@ -11,6 +11,10 @@ android {
     compileSdkVersion rootProject.ext.compileSdkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
 
+    sourceSets{
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+
     defaultConfig {
         applicationId "com.androidhuman.example.simplegithub"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -31,10 +35,6 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
-    }
-
-    sourceSets{
-        main.java.srcDirs += 'src/main/kotlin'
     }
 }
 

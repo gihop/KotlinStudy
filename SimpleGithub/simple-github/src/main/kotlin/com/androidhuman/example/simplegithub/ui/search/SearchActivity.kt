@@ -25,14 +25,15 @@ import retrofit2.Callback
 import retrofit2.Response
 
 class SearchActivity : AppCompatActivity(), ItemClickListener {
-    var rvList: RecyclerView? = null
-    var progress: ProgressBar? = null
-    var tvMessage: TextView? = null
-    var menuSearch: MenuItem? = null
-    var searchView: SearchView? = null
-    var adapter: SearchAdapter? = null
-    var api: GithubApi? = null
-    var searchCall: Call<RepoSearchResponse>? = null
+    internal lateinit var rvList: RecyclerView
+    internal lateinit var progress: ProgressBar
+    internal lateinit var tvMessage: TextView
+    internal lateinit var menuSearch: MenuItem
+    internal lateinit var searchView: SearchView
+    internal lateinit var adapter: SearchAdapter
+    internal lateinit var api: GithubApi
+    internal lateinit var searchCall: Call<RepoSearchResponse>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_search)
@@ -40,7 +41,7 @@ class SearchActivity : AppCompatActivity(), ItemClickListener {
         progress = findViewById(R.id.pbActivitySearch)
         tvMessage = findViewById(R.id.tvActivitySearchMessage)
         adapter = SearchAdapter()
-        adapter!!.setItemClickListener(this)
+        adapter.setItemClickListener(this)
         rvList.setLayoutManager(LinearLayoutManager(this))
         rvList.setAdapter(adapter)
         api = GithubApiProvider.provideGithubApi(this)
@@ -49,8 +50,12 @@ class SearchActivity : AppCompatActivity(), ItemClickListener {
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_activity_search, menu)
         menuSearch = menu.findItem(R.id.menu_activity_search_query)
-        searchView = menuSearch.getActionView() as SearchView
-        searchView!!.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+
+        //menuSearch.actionView를 SearchView로 캐스팅한다.
+        searchView = menuSearch.actionView as SearchView
+
+        //SearchView.OnQueryTextListener 인터페이스를 구현하는 익명 클래스의 인스턴스를 생성한다.
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String): Boolean {
                 updateTitle(query)
                 hideSoftKeyboard()
@@ -86,7 +91,9 @@ class SearchActivity : AppCompatActivity(), ItemClickListener {
         clearResults()
         hideError()
         showProgress()
-        searchCall = api!!.searchRepository(query)
+        searchCall = api.searchRepository(query)
+
+        //Call 인터페이스를 구현하는 익명 클래스의 인스턴스를 생성한다.
         searchCall.enqueue(object : Callback<RepoSearchResponse?> {
             override fun onResponse(call: Call<RepoSearchResponse?>,
                                     response: Response<RepoSearchResponse?>) {
@@ -118,7 +125,7 @@ class SearchActivity : AppCompatActivity(), ItemClickListener {
     }
 
     private fun hideSoftKeyboard() {
-        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(searchView!!.windowToken, 0)
     }
 
@@ -140,7 +147,8 @@ class SearchActivity : AppCompatActivity(), ItemClickListener {
     }
 
     private fun showError(message: String?) {
-        tvMessage!!.text = message
+        //message가 널 값인 경우 "Unexpected error." 메시지를 표시한다.
+        tvMessage!!.text = message ?: "Unexpected error."
         tvMessage!!.visibility = View.VISIBLE
     }
 

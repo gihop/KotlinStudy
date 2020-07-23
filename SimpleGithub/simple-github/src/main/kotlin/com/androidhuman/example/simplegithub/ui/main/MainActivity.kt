@@ -9,7 +9,7 @@ import com.androidhuman.example.simplegithub.R
 import com.androidhuman.example.simplegithub.ui.search.SearchActivity
 
 class MainActivity : AppCompatActivity() {
-    var btnSearch: FloatingActionButton? = null
+    internal lateinit var btnSearch: FloatingActionButton
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
