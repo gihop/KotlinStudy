@@ -71,6 +71,6 @@ class SearchAdapter : RecyclerView.Adapter<SearchAdapter.RepositoryHolder>() {
             .inflate(R.layout.item_repository, parent, false))
 
     interface ItemClickListener {
-        fun onItemClick(repository: GithubRepo?)
+        fun onItemClick(repository: GithubRepo)
     }
 }
