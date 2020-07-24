@@ -60,4 +60,7 @@ dependencies {
 
     //코틀린 어노테이션 프로세서에서 처리될 수 있도록 의존성에 추가한다.
     kapt "com.github.bumptech.glide:compiler:$glideVersion"
+
+    //Anko Commons 라이브러리를 의존성에 추가한다.
+    implementation "org.jetbrains.anko:anko-commons:$ankoVersion"
 }
