@@ -10,7 +10,7 @@ import android.widget.Toast
 import com.androidhuman.example.simplegithub.BuildConfig
 import com.androidhuman.example.simplegithub.R
 import com.androidhuman.example.simplegithub.api.AuthApi
-import com.androidhuman.example.simplegithub.api.GithubApiProvider
+import com.androidhuman.example.simplegithub.api.provideAuthApi
 import com.androidhuman.example.simplegithub.api.model.GithubAccessToken
 import com.androidhuman.example.simplegithub.data.AuthTokenProvider
 import com.androidhuman.example.simplegithub.ui.main.MainActivity
@@ -20,9 +20,13 @@ import retrofit2.Callback
 import retrofit2.Response
 
 class SignInActivity : AppCompatActivity() {
-    internal lateinit var api: AuthApi
-    internal lateinit var authTokenProvider: AuthTokenProvider
-    internal lateinit var accessTokenCall: Call<GithubAccessToken>
+    //패키지 단위 함수를 호출한다.
+    //lazy 프로퍼티를 적용하기 위해 val로 바꾼다.
+    //프로퍼티를 사용하기 전에 초기화를 안해도 컴파일 에러가 발생하지 않는 lateinit보다 프로퍼티를 최초로 사용하는 시점에 초기화를 수행하는 lazy로 바꾼다.
+    //또한 프로퍼티 선언과 동시에 이에 들어갈 값을 넣어주므로, 타입 추론 기능을 사용할 수 있다.
+    internal val api by lazy { provideAuthApi() }
+    internal val authTokenProvider by lazy { AuthTokenProvider(this) }
+    internal var accessTokenCall: Call<GithubAccessToken>? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sign_in)
@@ -39,8 +43,7 @@ class SignInActivity : AppCompatActivity() {
             val intent = CustomTabsIntent.Builder().build()
             intent.launchUrl(this@SignInActivity, authUri)
         })
-        api = GithubApiProvider.provideAuthApi()
-        authTokenProvider = AuthTokenProvider(this)
+
         if (null != authTokenProvider.token) {
             launchMainActivity()
         }
@@ -60,13 +63,21 @@ class SignInActivity : AppCompatActivity() {
         getAccessToken(code)
     }
 
+    override fun onStop() {
+        super.onStop()
+        //액티비티가 화면에서 사라지는 시점에 API 호출 객체가 생성되어 있다면 API 요청을 취소한다.
+        accessTokenCall?.run { cancel() }
+    }
+
     private fun getAccessToken(code: String) {
         showProgress()
         accessTokenCall = api.getAccessToken(
                 BuildConfig.GITHUB_CLIENT_ID, BuildConfig.GITHUB_CLIENT_SECRET, code)
 
         //Call 인터페이스를 구현하는 익명 클래스의 인스턴스를 생성한다.
-        accessTokenCall.enqueue(object : Callback<GithubAccessToken?> {
+        //앞에서 API 호출에 필요한 객체를 받았으므로, 이 시점에서 accessTokenCall 객체의 값은 널이 아니다.
+        //따라서 비 널 값 보증(!!)을 사용하여 이 객체를 사용한다.
+        accessTokenCall!!.enqueue(object : Callback<GithubAccessToken?> {
             override fun onResponse(call: Call<GithubAccessToken?>,
                                     response: Response<GithubAccessToken?>) {
                 hideProgress()
