@@ -4,8 +4,7 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.view.View
 import com.androidhuman.example.simplegithub.R
-import com.androidhuman.example.simplegithub.api.GithubApi
-import com.androidhuman.example.simplegithub.api.GithubApiProvider
+import com.androidhuman.example.simplegithub.api.provideGithubApi
 import com.androidhuman.example.simplegithub.api.model.GithubRepo
 import com.androidhuman.example.simplegithub.ui.GlideApp
 import kotlinx.android.synthetic.main.activity_repository.*
@@ -17,18 +16,29 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class RepositoryActivity : AppCompatActivity() {
-    internal lateinit var api: GithubApi
-    internal lateinit var repoCall: Call<GithubRepo>
-    internal var dateFormatInResponse = SimpleDateFormat(
+    //정적 필드로 정의되어 있던 항목은 동반 객체 내부에 정의된다.
+    //액티비티 호출 시 필요한 데이터를 전달할 때 사용하는 키 값들을 정의한 동반 객체 내 프로퍼티는 클래스 가장 위로 위치를
+    //옮겨주고, 각 프로퍼티에 const 키워드를 추가한다.
+    companion object {
+        const val KEY_USER_LOGIN = "user_login"
+        const val KEY_REPO_NAME = "repo_name"
+    }
+
+    //lazy 프로퍼티로 전환한다.
+    internal val api by lazy { provideGithubApi(this) }
+
+    //널 값을 허용하도록 한 후, 초기값을 명시적으로 null로 저장한다.
+    internal var repoCall: Call<GithubRepo>? = null
+
+    //두 프로퍼티는 객체를 한번 생성하고 나면 이후에 변경할 일이 없기 때문에 변수가 아닌 값으로 바꿔준다.
+    internal val dateFormatInResponse = SimpleDateFormat(
             "yyyy-MM-dd'T'HH:mm:ssX", Locale.getDefault())
-    internal var dateFormatToShow = SimpleDateFormat(
+    internal val dateFormatToShow = SimpleDateFormat(
             "yyyy-MM-dd HH:mm:ss", Locale.getDefault())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_repository)
-
-        api = GithubApiProvider.provideGithubApi(this)
 
         val login = intent.getStringExtra(KEY_USER_LOGIN)
                 ?: throw IllegalArgumentException("No login info exists in extras")
@@ -37,12 +47,20 @@ class RepositoryActivity : AppCompatActivity() {
         showRepositoryInfo(login, repo)
     }
 
+    override fun onStop() {
+        super.onStop()
+
+        //액티비티가 화면에서 사라지는 시점에 API 호출 객체가 생성되어 있으면 API 요청을 취소한다.
+        repoCall?.run { cancel() }
+    }
+
     private fun showRepositoryInfo(login: String, repoName: String) {
         showProgress()
         repoCall = api.getRepository(login, repoName)
 
         //Call 인터페이스를 구현하는 익명 클래스의 인스턴스를 생성한다.
-        repoCall.enqueue(object : Callback<GithubRepo?> {
+        //앞에서 API 호출에 필요한 객체를 받았으므로 이 시점에서 repoCall 객체의 값은 널이 아니다.
+        repoCall!!.enqueue(object : Callback<GithubRepo?> {
             override fun onResponse(call: Call<GithubRepo?>, response: Response<GithubRepo?>) {
                 hideProgress(true)
                 val repo = response.body()
@@ -93,13 +111,10 @@ class RepositoryActivity : AppCompatActivity() {
 
     private fun showError(message: String?) {
         //message가 널 값인 경우 "Unexpected error" 메시지를 표시한다.
-        tvActivityRepositoryMessage.text = message ?: "Unexpected error."
-        tvActivityRepositoryMessage.visibility = View.VISIBLE
-    }
-
-    //정적 필드로 정의되어 있던 항목은 동반 객체 내부에 정의된다.
-    companion object {
-        const val KEY_USER_LOGIN = "user_login"
-        const val KEY_REPO_NAME = "repo_name"
+        //with() 함수를 사용하여 에러 메시지를 표시하는 뷰 객체에 연속으로 접근하는 코드를 간략하게 표현한다.
+        with(tvActivityRepositoryMessage) {
+            text = message ?: "Unexpected error."
+            visibility = View.VISIBLE
+        }
     }
 }
