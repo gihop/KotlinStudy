@@ -10,8 +10,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import com.androidhuman.example.simplegithub.R
-import com.androidhuman.example.simplegithub.api.GithubApi
-import com.androidhuman.example.simplegithub.api.GithubApiProvider
+import com.androidhuman.example.simplegithub.api.provideGithubApi
 import com.androidhuman.example.simplegithub.api.model.GithubRepo
 import com.androidhuman.example.simplegithub.api.model.RepoSearchResponse
 import com.androidhuman.example.simplegithub.ui.repo.RepositoryActivity
@@ -23,19 +22,33 @@ import retrofit2.Response
 class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
     internal lateinit var menuSearch: MenuItem
     internal lateinit var searchView: SearchView
-    internal lateinit var adapter: SearchAdapter
-    internal lateinit var api: GithubApi
-    internal lateinit var searchCall: Call<RepoSearchResponse>
+
+    //lazy 프로퍼티로 전환.
+    internal val adapter by lazy {
+        //apply() 함수를 사용하여 객체 생성과 함수 호출을 한번에 수행한다.
+        SearchAdapter().apply { setItemClickListener(this@SearchActivity) }
+    }
+    internal val api by lazy { provideGithubApi(this) }
+
+    //널 값을 허용하도록 한 후, 초기값을 명시적으로 null로 지정한다.
+    internal var searchCall: Call<RepoSearchResponse>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_search)
-        adapter = SearchAdapter()
-        adapter.setItemClickListener(this)
+
         //인스턴스 선언 없이 뷰 ID를 사용하여 인스턴스에 접근한다.
-        rvActivitySearchList.setLayoutManager(LinearLayoutManager(this))
-        rvActivitySearchList.setAdapter(adapter)
-        api = GithubApiProvider.provideGithubApi(this)
+        //with() 함수를 사용하여 rcActicitySearchList 범위 내에서 작업을 수행한다.
+        with(rvActivitySearchList){
+            layoutManager = LinearLayoutManager(this@SearchActivity)
+            adapter = this@SearchActivity.adapter
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        //액티비티가 화면에서 사라지는 시점에 API 호출 객체가 생성되어 있다면 API 요청을 취소한다.
+        searchCall?.run { cancel() }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -43,23 +56,40 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
         menuSearch = menu.findItem(R.id.menu_activity_search_query)
 
         //menuSearch.actionView를 SearchView로 캐스팅한다.
-        searchView = menuSearch.actionView as SearchView
-
         //SearchView.OnQueryTextListener 인터페이스를 구현하는 익명 클래스의 인스턴스를 생성한다.
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String): Boolean {
-                updateTitle(query)
-                hideSoftKeyboard()
-                collapseSearchView()
-                searchRepository(query)
-                return true
-            }
+        //apply() 함수를 사용하여 객체 생성과 리스너 지정을 동시에 수행한다.
+        searchView = (menuSearch.actionView as SearchView).apply {
+            setOnQueryTextListener(object: SearchView.OnQueryTextListener{
+                override fun onQueryTextSubmit(query: String): Boolean {
+                    updateTitle(query)
+                    hideSoftKeyboard()
+                    collapseSearchView()
+                    searchRepository(query)
+                    return true
+                }
 
-            override fun onQueryTextChange(newText: String): Boolean {
-                return false
-            }
-        })
-        menuSearch.expandActionView()
+                override fun onQueryTextChange(newText: String): Boolean {
+                    return false
+                }
+            })
+        }
+
+        //with() 함수를 사용하여 menuSearch 범위 내에서 작업을 수행한다.
+        with(menuSearch){
+            setOnActionExpandListener(object: MenuItem.OnActionExpandListener{
+                override fun onMenuItemActionExpand(menuItem: MenuItem): Boolean {
+                    return true;
+                }
+
+                override fun onMenuItemActionCollapse(menuItem: MenuItem): Boolean {
+                    if("" == searchView.query){
+                        finish()
+                    }
+                    return true
+                }
+            })
+            expandActionView()
+        }
         return true
     }
 
@@ -72,9 +102,11 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
     }
 
     override fun onItemClick(repository: GithubRepo?) {
-        val intent = Intent(this, RepositoryActivity::class.java)
-        intent.putExtra(RepositoryActivity.KEY_USER_LOGIN, repository?.owner?.login)
-        intent.putExtra(RepositoryActivity.KEY_REPO_NAME, repository?.name)
+        //apply() 함수를 사용하여 객체 생성과 extra를 추가하는 작업을 동시에 수핸한다.
+        val intent = Intent(this, RepositoryActivity::class.java).apply {
+            putExtra(RepositoryActivity.KEY_USER_LOGIN, repository?.owner?.login)
+            putExtra(RepositoryActivity.KEY_REPO_NAME, repository?.name)
+        }
         startActivity(intent)
     }
 
@@ -85,14 +117,18 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
         searchCall = api.searchRepository(query)
 
         //Call 인터페이스를 구현하는 익명 클래스의 인스턴스를 생성한다.
-        searchCall.enqueue(object : Callback<RepoSearchResponse?> {
+        //앞에서 API 호출에 필요한 객체를 받았으므로, 이 시점에서 searchCall 객체의 값은 널이 아니다.
+        searchCall!!.enqueue(object : Callback<RepoSearchResponse?> {
             override fun onResponse(call: Call<RepoSearchResponse?>,
                                     response: Response<RepoSearchResponse?>) {
                 hideProgress()
                 val searchResult = response.body()
                 if (response.isSuccessful && null != searchResult) {
-                    adapter.setItems(searchResult.items)
-                    adapter.notifyDataSetChanged()
+                    //with() 함수를 사용하여 adpater 범위 내에서 작업을 수행한다.
+                    with(adapter) {
+                        setItems(searchResult.items)
+                        notifyDataSetChanged()
+                    }
                     if (0 == searchResult.totalCount) {
                         showError(getString(R.string.no_search_result))
                     }
@@ -109,15 +145,15 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
     }
 
     private fun updateTitle(query: String) {
-        val ab = supportActionBar
-        if (null != ab) {
-            ab.subtitle = query
-        }
+        //별도의 변수 선언 없이, getSupportActionBar()의 반환값이 널이 아닌 경우에만 작업을 수행한다.
+        supportActionBar?.run { subtitle = query }
     }
 
     private fun hideSoftKeyboard() {
-        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.hideSoftInputFromWindow(searchView.windowToken, 0)
+        //별도의 변수 없이 획득한 인스턴스의 범위 내에서 작업을 수행한다.
+        (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).run{
+            hideSoftInputFromWindow(searchView.windowToken, 0)
+        }
     }
 
     private fun collapseSearchView() {
@@ -125,8 +161,11 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
     }
 
     private fun clearResults() {
-        adapter.clearItems()
-        adapter.notifyDataSetChanged()
+        //with() 함수를 사용하여 adapter 범위 내에서 작업을 수행한다.
+        with(adapter){
+            clearItems()
+            notifyDataSetChanged()
+        }
     }
 
     private fun showProgress() {
@@ -139,12 +178,18 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
 
     private fun showError(message: String?) {
         //message가 널 값인 경우 "Unexpected error." 메시지를 표시한다.
-        tvActivitySearchMessage.text = message ?: "Unexpected error."
-        tvActivitySearchMessage.visibility = View.VISIBLE
+        //with() 함수를 사용하여 tvActivitySearchMessage 범위 내에서 작업을 수행한다.
+        with(tvActivitySearchMessage){
+            text = message ?: "Unexpected error."
+            visibility = View.VISIBLE
+        }
     }
 
     private fun hideError() {
-        tvActivitySearchMessage.text = ""
-        tvActivitySearchMessage.visibility = View.GONE
+        //with() 함수를 사용하여 tvActivitySearchMessage 범위 내에서 작업을 수행한다.
+        with(tvActivitySearchMessage){
+            text = ""
+            visibility = View.GONE
+        }
     }
 }
