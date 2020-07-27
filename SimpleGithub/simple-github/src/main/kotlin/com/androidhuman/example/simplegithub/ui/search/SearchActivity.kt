@@ -13,6 +13,7 @@ import com.androidhuman.example.simplegithub.api.provideGithubApi
 import com.androidhuman.example.simplegithub.api.model.GithubRepo
 import com.androidhuman.example.simplegithub.ui.repo.RepositoryActivity
 import com.androidhuman.example.simplegithub.extensions.plusAssign
+import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
@@ -34,6 +35,9 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
     //var searchCall: Call<RepoSearchResponse>? = null 대신해서 사용한다.
     internal val disposables = CompositeDisposable()
 
+    //viewDisposables 프로퍼티를 추가하여 뷰 이벤트의 디스포저블을 별도로 관리한다.
+    internal val viewDisposables = CompositeDisposable()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_search)
@@ -52,47 +56,50 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
         //관리하고 있던 디스포저블 객체를 모두 해제한다.
         //searchCall?.run{ cancel() } 대신 사용한다.
         disposables.clear()
+
+        //액티비티가 완전히 종료되고 있는 경우에만 관리하고 있는 디스포저블을 해제한다.
+        //화면이 꺼지거나 다른 액티비티를 호출하여 액티비티가 화면에서 사라지는 경우에는 해제하지 않는다.
+        if(isFinishing){
+            viewDisposables.clear()
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_activity_search, menu)
-        menuSearch = menu.findItem(R.id.menu_activity_search_query)
 
-        //menuSearch.actionView를 SearchView로 캐스팅한다.
-        //SearchView.OnQueryTextListener 인터페이스를 구현하는 익명 클래스의 인스턴스를 생성한다.
-        //apply() 함수를 사용하여 객체 생성과 리스너 지정을 동시에 수행한다.
-        searchView = (menuSearch.actionView as SearchView).apply {
-            setOnQueryTextListener(object: SearchView.OnQueryTextListener{
-                override fun onQueryTextSubmit(query: String): Boolean {
+        menuSearch = menu.findItem(R.id.menu_activity_search_query)
+        searchView = (menuSearch.actionView as SearchView)
+
+        //SearchView에서 발생하는 이벤트를 옵저버블 형태로 받는다.
+        viewDisposables += RxSearchView.queryTextChangeEvents(searchView)
+
+                //검색을 수행했을 때 발생한 이벤트만 받는다.
+                .filter { it.isSubmitted }
+
+                //이벤트에서 검색어 텍스트(CharSequence)를 추출한다.
+                .map { it.queryText() }
+
+                //빈 문자열이 아닌 검색어만 받는다.
+                .map { it.isNotEmpty() }
+
+                //검색어를 String 형태로 변환한다.
+                .map{ it.toString() }
+
+                //이 이후에 수행되는 코드는 모두 메인 스레드에서 실행한다.
+                //RxAndroid에서 제공하는 스케줄러인 AndroidSchedulers.mainThread()를 사용한다.
+                .observeOn(AndroidSchedulers.mainThread())
+
+                //옵저버블을 구독한다.
+                .subscribe{ query ->
+                    //검색 절차를 수행한다.
                     updateTitle(query)
                     hideSoftKeyboard()
                     collapseSearchView()
                     searchRepository(query)
-                    return true
                 }
 
-                override fun onQueryTextChange(newText: String): Boolean {
-                    return false
-                }
-            })
-        }
+        menuSearch.expandActionView()
 
-        //with() 함수를 사용하여 menuSearch 범위 내에서 작업을 수행한다.
-        with(menuSearch){
-            setOnActionExpandListener(object: MenuItem.OnActionExpandListener{
-                override fun onMenuItemActionExpand(menuItem: MenuItem): Boolean {
-                    return true;
-                }
-
-                override fun onMenuItemActionCollapse(menuItem: MenuItem): Boolean {
-                    if("" == searchView.query){
-                        finish()
-                    }
-                    return true
-                }
-            })
-            expandActionView()
-        }
         return true
     }
 
