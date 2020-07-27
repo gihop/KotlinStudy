@@ -13,7 +13,7 @@ import com.androidhuman.example.simplegithub.api.provideGithubApi
 import com.androidhuman.example.simplegithub.api.model.GithubRepo
 import com.androidhuman.example.simplegithub.ui.repo.RepositoryActivity
 import com.androidhuman.example.simplegithub.extensions.plusAssign
-import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
+import com.jakewharton.rxbinding2.support.v7.widget.queryTextChangeEvents
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
@@ -71,7 +71,8 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
         searchView = (menuSearch.actionView as SearchView)
 
         //SearchView에서 발생하는 이벤트를 옵저버블 형태로 받는다.
-        viewDisposables += RxSearchView.queryTextChangeEvents(searchView)
+        //코틀린 확장 라이브러리를 적용하여 RxBinding에서 제공하는 함수를 각 UI 위젯의 인스턴스에서 직접 호출할 수 있다.
+        viewDisposables += searchView.queryTextChangeEvents()
 
                 //검색을 수행했을 때 발생한 이벤트만 받는다.
                 .filter { it.isSubmitted }
