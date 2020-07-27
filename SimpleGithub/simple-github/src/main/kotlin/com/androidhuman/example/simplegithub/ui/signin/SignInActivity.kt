@@ -6,13 +6,14 @@ import android.os.Bundle
 import android.support.customtabs.CustomTabsIntent
 import android.support.v7.app.AppCompatActivity
 import android.view.View
-import android.widget.Toast
 import com.androidhuman.example.simplegithub.BuildConfig
 import com.androidhuman.example.simplegithub.R
 import com.androidhuman.example.simplegithub.api.provideAuthApi
 import com.androidhuman.example.simplegithub.api.model.GithubAccessToken
 import com.androidhuman.example.simplegithub.data.AuthTokenProvider
 import com.androidhuman.example.simplegithub.ui.main.MainActivity
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
 import kotlinx.android.synthetic.main.activity_sign_in.*
 import org.jetbrains.anko.clearTask
 import org.jetbrains.anko.intentFor
@@ -29,7 +30,10 @@ class SignInActivity : AppCompatActivity() {
     //또한 프로퍼티 선언과 동시에 이에 들어갈 값을 넣어주므로, 타입 추론 기능을 사용할 수 있다.
     internal val api by lazy { provideAuthApi() }
     internal val authTokenProvider by lazy { AuthTokenProvider(this) }
-    internal var accessTokenCall: Call<GithubAccessToken>? = null
+
+    //여러 디스포저블 객체를 관리할 수 있는 CompositeDisposable 객체를 초기화한다.
+    //val accessTokenCall: Call<GithubAccessToken>? = null 를 대체한다.
+    internal val disposables = CompositeDisposable()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sign_in)
@@ -68,37 +72,42 @@ class SignInActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        //액티비티가 화면에서 사라지는 시점에 API 호출 객체가 생성되어 있다면 API 요청을 취소한다.
-        accessTokenCall?.run { cancel() }
+
+        //관리하고 있던 디스포저블 객체를 모두 해제한다.
+        //디스포저블이 해제되는 시점에 진행 중인 네트워크 요청이 있었다면 자동으로 취소된다.
+        //accessTokenCall?.run { cancel() } 대신 사용한다.
+        disposables.clear()
     }
 
     private fun getAccessToken(code: String) {
-        showProgress()
-        accessTokenCall =  api.getAccessToken(
+        //REST API를 통해 엑세스 토큰을 요청한다.
+        disposables.add(api.getAccessToken(
                 BuildConfig.GITHUB_CLIENT_ID, BuildConfig.GITHUB_CLIENT_SECRET, code)
 
-        //Call 인터페이스를 구현하는 익명 클래스의 인스턴스를 생성한다.
-        //앞에서 API 호출에 필요한 객체를 받았으므로, 이 시점에서 accessTokenCall 객체의 값은 널이 아니다.
-        //따라서 비 널 값 보증(!!)을 사용하여 이 객체를 사용한다.
-        accessTokenCall!!.enqueue(object : Callback<GithubAccessToken?> {
-            override fun onResponse(call: Call<GithubAccessToken?>,
-                                    response: Response<GithubAccessToken?>) {
-                hideProgress()
-                val token = response.body()
-                if (response.isSuccessful && null != token) {
-                    authTokenProvider.updateToken(token.accessToken)
-                    launchMainActivity()
-                } else {
-                    showError(IllegalStateException(
-                            "Not successful: " + response.message()))
-                }
-            }
+                //REST API를 통해 받은 응답에서 엑세스 토큰만 추출한다.
+                .map{ it.accessToken }
 
-            override fun onFailure(call: Call<GithubAccessToken?>, t: Throwable) {
-                hideProgress()
-                showError(t)
-            }
-        })
+                //이 이후에 수행되는 코드는 모두 메인 스레드에서 실행한다.
+                //RxAndroid에서 제공하는 스케줄러인 AndroidSchedulers.mainThread()를 사용한다.
+                .observeOn(AndroidSchedulers.mainThread())
+
+                //구독할 때 수행할 작업을 구현한다.
+                .doOnSubscribe{ showProgress() }
+
+                //스트림이 종료될 때 수행할 작업을 구현한다.
+                .doOnTerminate{ hideProgress() }
+
+                //옵저버블을 구독한다.
+                .subscribe({ token ->
+                    //API를 통해 엑세스 토큰을 정상적으로 받았을 때 처리할 작업을 구현한다.
+                    //작업 중 오류가 발생하면 이 블록은 호출되지 않는다.
+                    authTokenProvider.updateToken(token)
+                    launchMainActivity()
+                }){
+                    //에러 블록.
+                    //네트워크 오류다 데이터 처리 오류 등 작업이 정상적으로 완료되지 않았을 때 호출된다.
+                    showError(it)
+                })
     }
 
     private fun showProgress() {
