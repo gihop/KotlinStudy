@@ -18,4 +18,8 @@ ext {
 
     //Kotlin
     kotlinVersion = '1.1.60'
+
+    //프로젝트에서 사용할 RxAndroid, RxJava 버전을 정의한다.
+    rxAndroidVersion = '2.0.1'
+    rxJavaVersion = '2.1.3'
 }
