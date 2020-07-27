@@ -70,4 +70,7 @@ dependencies {
     //RxAndroid와 RxJava 라이브러리를 추가한다.
     implementation "io.reactivex.rxjava2:rxandroid:$rxAndroidVersion"
     implementation "io.reactivex.rxjava2:rxjava:$rxJavaVersion"
+
+    //예제 프로젝트의 SearchView는 appcompat-v7에서 제공하는 라이브러리이고 이에 대응하는 RxBinding 라이브러리를 의존성에 추가한다.
+    implementation "com.jakewharton.rxbinding2:rxbinding-appcompat-v7:$rxBindingVersion"
 }
