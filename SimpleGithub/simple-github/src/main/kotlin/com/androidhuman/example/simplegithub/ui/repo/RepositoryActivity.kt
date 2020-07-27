@@ -5,12 +5,10 @@ import android.support.v7.app.AppCompatActivity
 import android.view.View
 import com.androidhuman.example.simplegithub.R
 import com.androidhuman.example.simplegithub.api.provideGithubApi
-import com.androidhuman.example.simplegithub.api.model.GithubRepo
 import com.androidhuman.example.simplegithub.ui.GlideApp
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
 import kotlinx.android.synthetic.main.activity_repository.*
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
@@ -27,8 +25,9 @@ class RepositoryActivity : AppCompatActivity() {
     //lazy 프로퍼티로 전환한다.
     internal val api by lazy { provideGithubApi(this) }
 
-    //널 값을 허용하도록 한 후, 초기값을 명시적으로 null로 저장한다.
-    internal var repoCall: Call<GithubRepo>? = null
+    //여러 디스포저블 객체를 관리할 수 있는 CompositeDisposable 객체를 초기화한다.
+    //var repoCall: Call<GithubRepo>? = null 대신 사용한다.
+    internal val disposable = CompositeDisposable()
 
     //두 프로퍼티는 객체를 한번 생성하고 나면 이후에 변경할 일이 없기 때문에 변수가 아닌 값으로 바꿔준다.
     internal val dateFormatInResponse = SimpleDateFormat(
@@ -50,53 +49,62 @@ class RepositoryActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
 
-        //액티비티가 화면에서 사라지는 시점에 API 호출 객체가 생성되어 있으면 API 요청을 취소한다.
-        repoCall?.run { cancel() }
+        //관리하고 있던 디스포저블 객체를 모두 해제한다.
+        //repoCall?.run{ cancel() } 대신 사용한다.
+        disposable.clear()
     }
 
     private fun showRepositoryInfo(login: String, repoName: String) {
-        showProgress()
-        repoCall = api.getRepository(login, repoName)
+        //REST API를 통해 저장소 정보를 요청한다.
+        disposable.add(api.getRepository(login, repoName)
+                //이 이후에 수행되는 코드는 모두 메인 스레드에서 실행한다.
+                .observeOn(AndroidSchedulers.mainThread())
 
-        //Call 인터페이스를 구현하는 익명 클래스의 인스턴스를 생성한다.
-        //앞에서 API 호출에 필요한 객체를 받았으므로 이 시점에서 repoCall 객체의 값은 널이 아니다.
-        repoCall!!.enqueue(object : Callback<GithubRepo?> {
-            override fun onResponse(call: Call<GithubRepo?>, response: Response<GithubRepo?>) {
-                hideProgress(true)
-                val repo = response.body()
-                if (response.isSuccessful && null != repo) {
+                //구독할 때 수행할 작업을 구현한다.
+                .doOnSubscribe { showProgress() }
+
+                //에러가 발생했을 때 수행할 작업을 구현한다.
+                .doOnError{ hideProgress(false) }
+
+                //스트림이 정상 종료되었을 때 수행할 작업을 구현한다.
+                .doOnComplete{ hideProgress(true) }
+
+                //옵저버블을 구독한다.
+                .subscribe({ repo ->
+                    //API를 통해 저장소 정보를 정상적으로 받았을 때 처리할 작업을 구현한다.
+                    //작업 중 오류가 발생하면 이 블록은 호출되지 않는다.
                     GlideApp.with(this@RepositoryActivity)
                             .load(repo.owner.avatarUrl)
                             .into(ivActivityRepositoryProfile)
+
                     tvActivityRepositoryName.text = repo.fullName
-                    tvActivityRepositoryStars.text = resources
-                            .getQuantityString(R.plurals.star, repo.stars, repo.stars)
-                    if (null == repo.description) {
+                    tvActivityRepositoryStars.text = resources.getQuantityString(R.plurals.star, repo.stars)
+
+                    if(null == repo.description){
                         tvActivityRepositoryDescription.setText(R.string.no_description_provided)
-                    } else {
+                    }
+                    else{
                         tvActivityRepositoryDescription.text = repo.description
                     }
-                    if (null == repo.language) {
-                        tvActivityRepositoryLanguage.setText(R.string.no_language_specified)
-                    } else {
+
+                    if(null == repo.language){
+                        tvActivityRepositoryLanguage.setText(R.string.no_description_provided)
+                    }
+                    else{
                         tvActivityRepositoryLanguage.text = repo.language
                     }
-                    try {
+
+                    try{
                         val lastUpdate = dateFormatInResponse.parse(repo.updatedAt)
                         tvActivityRepositoryLastUpdate.text = dateFormatToShow.format(lastUpdate)
-                    } catch (e: ParseException) {
+                    }catch (e: ParseException){
                         tvActivityRepositoryLastUpdate.text = getString(R.string.unknown)
                     }
-                } else {
-                    showError("Not successful: " + response.message())
-                }
-            }
-
-            override fun onFailure(call: Call<GithubRepo?>, t: Throwable) {
-                hideProgress(false)
-                showError(t.message)
-            }
-        })
+                }) {
+                    //에러 블록.
+                    //네트워크 오류나 데이터 처리 오류 등 작업이 정상적으로 완료되지 않았을 때 호출된다.
+                    showError(it.message)
+                })
     }
 
     private fun showProgress() {
