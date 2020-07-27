@@ -74,7 +74,7 @@ class SignInActivity : AppCompatActivity() {
 
     private fun getAccessToken(code: String) {
         showProgress()
-        accessTokenCall = api.getAccessToken(
+        accessTokenCall =  api.getAccessToken(
                 BuildConfig.GITHUB_CLIENT_ID, BuildConfig.GITHUB_CLIENT_SECRET, code)
 
         //Call 인터페이스를 구현하는 익명 클래스의 인스턴스를 생성한다.
