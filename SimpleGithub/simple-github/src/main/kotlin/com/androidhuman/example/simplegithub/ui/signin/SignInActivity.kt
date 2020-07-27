@@ -9,7 +9,6 @@ import android.view.View
 import com.androidhuman.example.simplegithub.BuildConfig
 import com.androidhuman.example.simplegithub.R
 import com.androidhuman.example.simplegithub.api.provideAuthApi
-import com.androidhuman.example.simplegithub.api.model.GithubAccessToken
 import com.androidhuman.example.simplegithub.data.AuthTokenProvider
 import com.androidhuman.example.simplegithub.ui.main.MainActivity
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -19,9 +18,7 @@ import org.jetbrains.anko.clearTask
 import org.jetbrains.anko.intentFor
 import org.jetbrains.anko.longToast
 import org.jetbrains.anko.newTask
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import com.androidhuman.example.simplegithub.extensions.plusAssign
 
 class SignInActivity : AppCompatActivity() {
     //패키지 단위 함수를 호출한다.
@@ -81,7 +78,8 @@ class SignInActivity : AppCompatActivity() {
 
     private fun getAccessToken(code: String) {
         //REST API를 통해 엑세스 토큰을 요청한다.
-        disposables.add(api.getAccessToken(
+        //'+=' 연산자로 디스포저블을 CompositeDisposable에 추가한다.
+        disposables += api.getAccessToken(
                 BuildConfig.GITHUB_CLIENT_ID, BuildConfig.GITHUB_CLIENT_SECRET, code)
 
                 //REST API를 통해 받은 응답에서 엑세스 토큰만 추출한다.
@@ -107,7 +105,7 @@ class SignInActivity : AppCompatActivity() {
                     //에러 블록.
                     //네트워크 오류다 데이터 처리 오류 등 작업이 정상적으로 완료되지 않았을 때 호출된다.
                     showError(it)
-                })
+                }
     }
 
     private fun showProgress() {

@@ -11,16 +11,13 @@ import android.view.inputmethod.InputMethodManager
 import com.androidhuman.example.simplegithub.R
 import com.androidhuman.example.simplegithub.api.provideGithubApi
 import com.androidhuman.example.simplegithub.api.model.GithubRepo
-import com.androidhuman.example.simplegithub.api.model.RepoSearchResponse
 import com.androidhuman.example.simplegithub.ui.repo.RepositoryActivity
+import com.androidhuman.example.simplegithub.extensions.plusAssign
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import kotlinx.android.synthetic.main.activity_search.*
 import org.jetbrains.anko.startActivity
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 
 class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
     internal lateinit var menuSearch: MenuItem
@@ -116,7 +113,8 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
 
     private fun searchRepository(query: String) {
         //REST API를 통해 검색 결과를 요청한다.
-        disposables.add(api.searchRepository(query)
+        //'+=' 연산자로 디스포저블을 CompositeDisposable에 추가한다.
+        disposables += api.searchRepository(query)
 
                 //Observable 형태로 결과를 바꿔주기 위해 flatMap을 사용한다.
                 .flatMap {
@@ -159,7 +157,6 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
                     //네트워크 오류나 데이터 처리 오류 등 작업이 정상적으로 완료되지 않았을 때 호출한다.
                     showError(it.message)
                 }
-        )
     }
 
     private fun updateTitle(query: String) {

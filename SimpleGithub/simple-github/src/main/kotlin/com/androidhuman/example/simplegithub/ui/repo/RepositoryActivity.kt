@@ -6,6 +6,7 @@ import android.view.View
 import com.androidhuman.example.simplegithub.R
 import com.androidhuman.example.simplegithub.api.provideGithubApi
 import com.androidhuman.example.simplegithub.ui.GlideApp
+import com.androidhuman.example.simplegithub.extensions.plusAssign
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import kotlinx.android.synthetic.main.activity_repository.*
@@ -56,7 +57,8 @@ class RepositoryActivity : AppCompatActivity() {
 
     private fun showRepositoryInfo(login: String, repoName: String) {
         //REST API를 통해 저장소 정보를 요청한다.
-        disposable.add(api.getRepository(login, repoName)
+        //'+=' 연산자로 디스포저블을 CompositeDisposable에 추가한다.
+        disposable += api.getRepository(login, repoName)
                 //이 이후에 수행되는 코드는 모두 메인 스레드에서 실행한다.
                 .observeOn(AndroidSchedulers.mainThread())
 
@@ -104,7 +106,7 @@ class RepositoryActivity : AppCompatActivity() {
                     //에러 블록.
                     //네트워크 오류나 데이터 처리 오류 등 작업이 정상적으로 완료되지 않았을 때 호출된다.
                     showError(it.message)
-                })
+                }
     }
 
     private fun showProgress() {
