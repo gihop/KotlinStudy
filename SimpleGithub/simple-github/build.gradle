@@ -76,4 +76,10 @@ dependencies {
 
     //rxbinding-appcompat-v7의 코틀린 확장 라이브러리를 사용한다.
     implementation "com.jakewharton.rxbinding2:rxbinding-appcompat-v7-kotlin:$rxBindingVersion"
+
+    //안드로이드 아키텍처 컴포넌트를 위한 의존성을 추가한다.
+    implementation "android.arch.lifecycle:extensions:$archComponentVersion"
+
+    //안드로이드 아키텍처 컴포넌트에서는 어노테이션 프로세서를 사용하므로, 이를 위한 의존성도 함께 추가한다.
+    implementation "android.arch.lifecycle:compiler:$archComponentVersion"
 }

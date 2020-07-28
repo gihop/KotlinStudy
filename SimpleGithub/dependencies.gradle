@@ -25,4 +25,7 @@ ext {
 
     //프로젝트에 사용할 RxBinding 버전을 정의한다.
     rxBindingVersion = '2.0.0'
+
+    //사용할 아키텍처 컴포넌트 버전을 추가한다.
+    archComponentVersion = '1.0.0'
 }
