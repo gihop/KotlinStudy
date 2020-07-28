@@ -7,6 +7,7 @@ import com.androidhuman.example.simplegithub.R
 import com.androidhuman.example.simplegithub.api.provideGithubApi
 import com.androidhuman.example.simplegithub.ui.GlideApp
 import com.androidhuman.example.simplegithub.extensions.plusAssign
+import com.androidhuman.example.simplegithub.rx.AutoClearedDisposable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import kotlinx.android.synthetic.main.activity_repository.*
@@ -28,7 +29,8 @@ class RepositoryActivity : AppCompatActivity() {
 
     //여러 디스포저블 객체를 관리할 수 있는 CompositeDisposable 객체를 초기화한다.
     //var repoCall: Call<GithubRepo>? = null 대신 사용한다.
-    internal val disposable = CompositeDisposable()
+    //CompositeDisposable에서 AutoClearedDisposable로 타입을 변경한다.
+    internal val disposable = AutoClearedDisposable(this)
 
     //두 프로퍼티는 객체를 한번 생성하고 나면 이후에 변경할 일이 없기 때문에 변수가 아닌 값으로 바꿔준다.
     internal val dateFormatInResponse = SimpleDateFormat(
@@ -40,6 +42,9 @@ class RepositoryActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_repository)
 
+        //Lifecycle.addObserver() 함수를 사용하여 AutoClearedDisposable 객체를 옵저버로 등록한다.
+        lifecycle += disposable
+
         val login = intent.getStringExtra(KEY_USER_LOGIN)
                 ?: throw IllegalArgumentException("No login info exists in extras")
         val repo = intent.getStringExtra(KEY_REPO_NAME)
@@ -47,13 +52,14 @@ class RepositoryActivity : AppCompatActivity() {
         showRepositoryInfo(login, repo)
     }
 
+    /* onStop() 함수는 더 이상 오버라이드하지 않아도 된다.
     override fun onStop() {
         super.onStop()
 
         //관리하고 있던 디스포저블 객체를 모두 해제한다.
         //repoCall?.run{ cancel() } 대신 사용한다.
         disposable.clear()
-    }
+    }*/
 
     private fun showRepositoryInfo(login: String, repoName: String) {
         //REST API를 통해 저장소 정보를 요청한다.

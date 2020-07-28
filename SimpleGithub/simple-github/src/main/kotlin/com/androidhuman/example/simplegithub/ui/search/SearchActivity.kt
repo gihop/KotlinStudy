@@ -13,6 +13,7 @@ import com.androidhuman.example.simplegithub.api.provideGithubApi
 import com.androidhuman.example.simplegithub.api.model.GithubRepo
 import com.androidhuman.example.simplegithub.ui.repo.RepositoryActivity
 import com.androidhuman.example.simplegithub.extensions.plusAssign
+import com.androidhuman.example.simplegithub.rx.AutoClearedDisposable
 import com.jakewharton.rxbinding2.support.v7.widget.queryTextChangeEvents
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -33,14 +34,22 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
 
     //여러 디스포저블 객체를 관리할 수 있는 CompositeDisposable 객체를 초기화한다.
     //var searchCall: Call<RepoSearchResponse>? = null 대신해서 사용한다.
-    internal val disposables = CompositeDisposable()
+    //CompositeDisposable에서 AutoClearedDisposable로 변경한다.
+    internal val disposables = AutoClearedDisposable(this)
 
     //viewDisposables 프로퍼티를 추가하여 뷰 이벤트의 디스포저블을 별도로 관리한다.
-    internal val viewDisposables = CompositeDisposable()
+    //CompositeDisposable에서 AutoClearedDisposable로 변경한다.
+    //viewDisposables는 onStop() 콜백 함수가 호출되더라도 액티비티가 종료되는 시점에만 관리하고 있는 디스포저블을 해제하므로,
+    //alwaysClearOnStop 프로퍼티를 false로 생성한 생성자를 사용한다.
+    internal val viewDisposables = AutoClearedDisposable(lifecycleOwner = this, alwaysClearOnStop = false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_search)
+
+        //Lifecycle.addObserver() 함쑤를 사용하여 각 객체를 옵저버로 등록한다.
+        lifecycle += disposables
+        lifecycle += viewDisposables
 
         //인스턴스 선언 없이 뷰 ID를 사용하여 인스턴스에 접근한다.
         //with() 함수를 사용하여 rcActicitySearchList 범위 내에서 작업을 수행한다.
@@ -50,6 +59,7 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
         }
     }
 
+    /*onStop() 함숫는 더 이상 오버라이드 하지 않아도 된다.
     override fun onStop() {
         super.onStop()
 
@@ -62,7 +72,7 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
         if(isFinishing){
             viewDisposables.clear()
         }
-    }
+    }*/
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_activity_search, menu)

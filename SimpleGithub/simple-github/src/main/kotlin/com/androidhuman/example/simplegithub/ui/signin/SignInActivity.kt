@@ -19,6 +19,7 @@ import org.jetbrains.anko.intentFor
 import org.jetbrains.anko.longToast
 import org.jetbrains.anko.newTask
 import com.androidhuman.example.simplegithub.extensions.plusAssign
+import com.androidhuman.example.simplegithub.rx.AutoClearedDisposable
 
 class SignInActivity : AppCompatActivity() {
     //패키지 단위 함수를 호출한다.
@@ -30,10 +31,14 @@ class SignInActivity : AppCompatActivity() {
 
     //여러 디스포저블 객체를 관리할 수 있는 CompositeDisposable 객체를 초기화한다.
     //val accessTokenCall: Call<GithubAccessToken>? = null 를 대체한다.
-    internal val disposables = CompositeDisposable()
+    //CompositeDisposable에서 AutoClearedDisposable로 변경한다.
+    internal val disposables = AutoClearedDisposable(this)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sign_in)
+
+        //Lifecycle.addObserver() 함수를 사용하여 AutoClearedDisposable 객체를 옵저버로 등록한다.
+        lifecycle += disposables
 
         //View.OnClickListener의 본체를 람다 표현식으로 작성한다.
         //버튼 인스턴스 선언 없이 코틀린 익스텐션을 써서 뷰 ID로 인스턴스에 접근한다.
@@ -67,6 +72,7 @@ class SignInActivity : AppCompatActivity() {
         getAccessToken(code)
     }
 
+    /*onStop() 함수는 더이상 오버라이드하지 않아도 된다.
     override fun onStop() {
         super.onStop()
 
@@ -74,7 +80,7 @@ class SignInActivity : AppCompatActivity() {
         //디스포저블이 해제되는 시점에 진행 중인 네트워크 요청이 있었다면 자동으로 취소된다.
         //accessTokenCall?.run { cancel() } 대신 사용한다.
         disposables.clear()
-    }
+    }*/
 
     private fun getAccessToken(code: String) {
         //REST API를 통해 엑세스 토큰을 요청한다.
