@@ -86,7 +86,7 @@ class RepositoryActivity : AppCompatActivity() {
                             .into(ivActivityRepositoryProfile)
 
                     tvActivityRepositoryName.text = repo.fullName
-                    tvActivityRepositoryStars.text = resources.getQuantityString(R.plurals.star, repo.stars)
+                    tvActivityRepositoryStars.text = resources.getQuantityString(R.plurals.star, repo.stars, repo.stars)
 
                     if(null == repo.description){
                         tvActivityRepositoryDescription.setText(R.string.no_description_provided)
