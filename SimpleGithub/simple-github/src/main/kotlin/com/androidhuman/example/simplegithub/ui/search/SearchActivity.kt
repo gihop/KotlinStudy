@@ -98,7 +98,7 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
                 .map { it.queryText() }
 
                 //빈 문자열이 아닌 검색어만 받는다.
-                .map { it.isNotEmpty() }
+                .filter { it.isNotEmpty() }
 
                 //검색어를 String 형태로 변환한다.
                 .map{ it.toString() }

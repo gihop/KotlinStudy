@@ -123,7 +123,7 @@ class MainActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
     }
 
     //앞에서 생성한 메뉴 리소스를 액티비티의 메뉴로 표시하도록 한다.
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_activity_main, menu)
         return true
     }

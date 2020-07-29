@@ -16,7 +16,7 @@ private fun provideDatabase(context: Context):SimpleGithubDatabase{
     if(null == instance){
         //simple_github.db 데이터베이스 파일을 사용하는 룸 데이터베이스를 생성한다.
         instance = Room.databaseBuilder(context.applicationContext,
-                SimpleGithubDatabase::class.java, "simple_github.db")
+                SimpleGithubDatabase::class.java, "my_simple_github.db")
                 .build()
     }
 

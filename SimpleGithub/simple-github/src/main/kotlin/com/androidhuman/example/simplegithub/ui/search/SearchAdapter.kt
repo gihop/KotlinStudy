@@ -23,7 +23,6 @@ class SearchAdapter : RecyclerView.Adapter<SearchAdapter.RepositoryHolder>() {
     //항상 RepositoryHolder 객체만 반환하므로 단일 표현식으로 표현할 수 있다.
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = RepositoryHolder(parent)
 
-
     override fun onBindViewHolder(holder: RepositoryHolder, position: Int) {
         //items.get(position) 대신 배열 인덱스 접근 연산자를 사용한다.
         //뷰에 표시할 데이터를 참조하기 위한 repo는, 뷰에 데이터를 반영하기 위해 사용될 뿐, 다른 곳에서는 사용하지 않는다.
@@ -34,18 +33,14 @@ class SearchAdapter : RecyclerView.Adapter<SearchAdapter.RepositoryHolder>() {
                 GlideApp.with(context)
                         .load(repo.owner.avatarUrl)
                         .placeholder(placeholder)
-                        .into(ivActivityRepositoryProfile)
+                        .into(ivItemRepositoryProfile)
                 tvItemRepositoryName.text = repo.fullName
                 tvItemRepositoryLanguage.text = if (TextUtils.isEmpty(repo.language))
                     context.getText(R.string.no_language_specified)
                 else repo.language
 
                 //View.OnClickListener의 본체를 람다 표현식으로 작성한다.
-                setOnClickListener {
-                    if (null != listener) {
-                        listener!!.onItemClick(repo)
-                    }
-                }
+                setOnClickListener { listener?.onItemClick(repo) }
             }
         }
     }
