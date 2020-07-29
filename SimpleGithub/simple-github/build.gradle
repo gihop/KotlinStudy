@@ -82,4 +82,13 @@ dependencies {
 
     //안드로이드 아키텍처 컴포넌트에서는 어노테이션 프로세서를 사용하므로, 이를 위한 의존성도 함께 추가한다.
     implementation "android.arch.lifecycle:compiler:$archComponentVersion"
+
+    //룸 라이브러리를 추가한다.
+    implementation "android.arch.persistence.room:runtime:$archComponentVersion"
+
+    //룸 라이브러리 RxJava 플러그인을 추가한다.
+    implementation "android.arch.persistence.room:rxjava2:$archComponentVersion"
+
+    //룸 라이브러리용 어노테이션 프로세서를 추가한다.
+    kapt "android.arch.persistence.room:compiler:$archComponentVersion"
 }
