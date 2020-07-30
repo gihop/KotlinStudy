@@ -36,7 +36,7 @@ class SignInActivity : AppCompatActivity() {
     internal val disposables = AutoClearedDisposable(this)
 
     //액티비티가 완전히 종료되기 전까지 이벤트를 계속 받기 위해 추가한다.
-    internal val viewDisposable = AutoClearedDisposable(lifecycleOwner = this, alwaysClearOnStop = false)
+    internal val viewDisposables = AutoClearedDisposable(lifecycleOwner = this, alwaysClearOnStop = false)
 
     //SignInViewModel을 생성할 때 필요한 뷰모델 팩토리 클래스의 인스턴스를 생성한다.
     internal val viewModelFactory by lazy { SignInViewModelFactory(provideAuthApi(), AuthTokenProvider(this))
@@ -56,7 +56,7 @@ class SignInActivity : AppCompatActivity() {
         lifecycle += disposables
 
         //viewDisposables에서 이 액티비티의 생명주기 이벤트를 받도록 한다.
-        lifecycle += viewDisposable
+        lifecycle += viewDisposables
 
         //View.OnClickListener의 본체를 람다 표현식으로 작성한다.
         //버튼 인스턴스 선언 없이 코틀린 익스텐션을 써서 뷰 ID로 인스턴스에 접근한다.
@@ -76,7 +76,7 @@ class SignInActivity : AppCompatActivity() {
         }
 
         //엑세스 토큰 이벤트를 구독한다.
-        viewDisposable += viewModel.accessToken
+        viewDisposables += viewModel.accessToken
                 //엑세스 토큰이 없는 경우는 무시한다.
                 .filter { !it.isEmpty }
                 .observeOn(AndroidSchedulers.mainThread())
@@ -84,12 +84,12 @@ class SignInActivity : AppCompatActivity() {
                 .subscribe{ launchMainActivity() }
 
         //에러 메시지 이벤트를 구독한다.
-        viewDisposable += viewModel.message
+        viewDisposables += viewModel.message
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { message -> showError(message) }
 
         //작업 진행 여부 이벤트를 구독한다.
-        viewDisposable += viewModel.isLoading
+        viewDisposables += viewModel.isLoading
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { isLoading ->
                     //작업 진행 여부 이벤트에 따라 프로그레스바의 표시 상태를 변경한다.

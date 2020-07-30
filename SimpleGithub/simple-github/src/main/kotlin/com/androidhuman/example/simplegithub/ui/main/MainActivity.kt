@@ -3,6 +3,7 @@ package com.androidhuman.example.simplegithub.ui.main
 import android.arch.lifecycle.Lifecycle
 import android.arch.lifecycle.LifecycleObserver
 import android.arch.lifecycle.OnLifecycleEvent
+import android.arch.lifecycle.ViewModelProviders
 import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
@@ -15,6 +16,7 @@ import com.androidhuman.example.simplegithub.api.model.GithubRepo
 import com.androidhuman.example.simplegithub.data.providerSearchHistoryDao
 import com.androidhuman.example.simplegithub.extensions.plusAssign
 import com.androidhuman.example.simplegithub.extensions.runOnIoScheduler
+import com.androidhuman.example.simplegithub.rx.AutoActivatedDisposable
 import com.androidhuman.example.simplegithub.rx.AutoClearedDisposable
 import com.androidhuman.example.simplegithub.ui.repo.RepositoryActivity
 import com.androidhuman.example.simplegithub.ui.search.SearchActivity
@@ -38,12 +40,45 @@ class MainActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
     //디스포저블을 관리하는 프로퍼티를 추가한다.
     internal val disposables = AutoClearedDisposable(this)
 
+    //액티비티가 완전히 종료되기 전까지 이벤트를 계속 받기 위해 추가한다.
+    internal val viewDisposables = AutoClearedDisposable(lifecycleOwner = this, alwaysClearOnStop = false)
+
+    //MainViewModel을 생성하기 위해 필요한 뷰모델 팩토리 클래스의 인스턴스를 생성한다.
+    internal val viewModelFactory by lazy { MainViewModelFactory(providerSearchHistoryDao(this)) }
+
+    //뷰모델의 인스턴스는 onCreate()에서 받으므로, lateinit으로 선언한다.
+    lateinit var viewModel: MainViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        //MainViewModel의 인스턴스를 받는다.
+        viewModel = ViewModelProviders.of(this, viewModelFactory)[MainViewModel::class.java]
+
         //생명주기 이벤트 옵저버를 등록한다.
         lifecycle += disposables
+
+        //viewDisposables에서 이 액티비티의 생명주기 이벤트를 받도록 한다.
+        lifecycle += viewDisposables
+
+        //액티비티가 활성 상태일 때만 데이터베이스에 저장된 저장소 조회 기록을 받도록 한다.
+        lifecycle += AutoActivatedDisposable(this){
+            viewModel.searchHisory
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe{ items ->
+                        with(adapter){
+                            if(items.isEmpty){
+                                clearItems()
+                            } else {
+                                setItems(items.value)
+                            }
+                            notifyDataSetChanged()
+                        }
+                    }
+        }
+
         lifecycle += object: LifecycleObserver{
             //onStart() 콜백 함수가 호출되면 fetchSearchHistory() 함수를 호출한다.
             @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
@@ -63,6 +98,19 @@ class MainActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = this@MainActivity.adapter
         }
+
+        //메시지 이벤트를 구독한다.
+        viewDisposables += viewModel.message
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe{ message ->
+                    if(message.isEmpty){
+                        //빈 메시지를 받은 경우 표시되고 있는 메시지를 화면에서 숨긴다.
+                        hideMessage()
+                    } else {
+                        //유효한 메시지를 받은 경우 화면에 메시지를 표시한다.
+                        showMessage(message.value)
+                    }
+                }
     }
 
     //선택한 항목의 정보를 토대로 RepositoryActivity를 실행한다.
@@ -131,7 +179,8 @@ class MainActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         //'Clear all' 메뉴를 선택하면 조회했던 저장소 기록을 모두 삭제한다.
         if(R.id.menu_activity_main_clear_all == item.itemId){
-            clearAll()
+            //데이터베이스에 저장된 저장소 조회 기록 데이터를 모두 삭제한다.
+            disposables += viewModel.clearSearchHistory()
             return true
         }
         return super.onOptionsItemSelected(item)
