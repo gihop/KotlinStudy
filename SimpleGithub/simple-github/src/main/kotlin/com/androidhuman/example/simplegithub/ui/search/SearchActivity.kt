@@ -1,5 +1,6 @@
 package com.androidhuman.example.simplegithub.ui.search
 
+import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
@@ -45,7 +46,18 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
     //CompositeDisposable에서 AutoClearedDisposable로 변경한다.
     //viewDisposables는 onStop() 콜백 함수가 호출되더라도 액티비티가 종료되는 시점에만 관리하고 있는 디스포저블을 해제하므로,
     //alwaysClearOnStop 프로퍼티를 false로 생성한 생성자를 사용한다.
+    //액티비티가 완전히 종료되기 전까지 이벤트를 계속 받기 위해 추가한다.
     internal val viewDisposables = AutoClearedDisposable(lifecycleOwner = this, alwaysClearOnStop = false)
+
+    //SearchViewModel을 생성할 때 필요한 뷰모델 팩토리 클래스의 인스턴스를 생성한다.
+    internal val viewModelFactory by lazy {
+        SearchViewModelFactory(
+                provideGithubApi(this),
+                providerSearchHistoryDao(this))
+    }
+
+    //뷰모델의 인스턴스는 onCreate()에서 받으므로, lateinit으로 선언.
+    lateinit var viewModel: SearchViewModel
 
     //SearchHistoryDao의 인스턴스를 받아온다.
     internal val searchHistoryDao by lazy { providerSearchHistoryDao(this) }
@@ -53,6 +65,9 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_search)
+
+        //SearchViewModel의 인스턴스를 받는다.
+        viewModel = ViewModelProviders.of(this, viewModelFactory)[SearchViewModel::class.java]
 
         //Lifecycle.addObserver() 함쑤를 사용하여 각 객체를 옵저버로 등록한다.
         lifecycle += disposables
@@ -64,6 +79,47 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
             layoutManager = LinearLayoutManager(this@SearchActivity)
             adapter = this@SearchActivity.adapter
         }
+
+        //검색 결과 이벤트를 구독한다.
+        viewDisposables += viewModel.searchResult
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe{ items ->
+                    with(adapter){
+                        if(items.isEmpty){
+                            //빈 이벤트를 받으면 표시되고 있던 항목을 제거.
+                            clearItems()
+                        } else {
+                            //유효한 이벤트를 받으면 데이터를 화면에 표시.
+                            setItems(items.value)
+                        }
+                        notifyDataSetChanged()
+                    }
+                }
+
+        //메시지 이벤트를 구독한다.
+        viewDisposables += viewModel.message
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe{ message ->
+                    if(message.isEmpty){
+                        //빈 이벤트를 ㅂ다으면 화면에 표시되고 있던 메시지를 숨긴다.
+                        hideError()
+                    } else {
+                        //유효한 이벤트를 받으면 화면에 메시지를 표시.
+                        showError(message.value)
+                    }
+                }
+
+        //작업 진행 여부 이벤트를 구독한다.
+        viewDisposables += viewModel.isLoading
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe{ isLoading ->
+                    //작업 진행 여부 이벤트에 따라 프로그레스바의 표시 상태를 변경.
+                    if(isLoading){
+                        showProgress()
+                    } else {
+                        hideProgress()
+                    }
+                }
     }
 
     /*onStop() 함숫는 더 이상 오버라이드 하지 않아도 된다.
@@ -116,7 +172,18 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
                     searchRepository(query)
                 }
 
-        menuSearch.expandActionView()
+        //마지막으로 검색한 검색어 이벤트를 구독한다.
+        viewDisposables += viewModel.lastSearchKeyword
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe { keyword ->
+                    if(keyword.isEmpty){
+                        //아직 검색을 수행하지 않은 경우 SearchView를 펼친 상태로 유지.
+                        menuSearch.expandActionView()
+                    } else {
+                        //검색어가 있는 경우 해당 검색어를 액티비티의 제목으로 표시.
+                        updateTitle(keyword.value)
+                    }
+                }
 
         return true
     }
@@ -130,9 +197,8 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
     }
 
     override fun onItemClick(repository: GithubRepo) {
-        //runOnIoScheduler 함수로 IO 스케줄러에서 실행할 작업을 간단히 표현한다.
-        disposables += runOnIoScheduler { searchHistoryDao.add(repository) }
-
+        //선택한 저장소 정보를 데이터베이스에 추가.
+        disposables += viewModel.addToSearchHistory(repository)
         //Anko에서 제공하는 startActivity를 사용하면 부가 정보로 전달할 인자를 이 함수의 인자로 바로 전달할 수 있다.
         startActivity<RepositoryActivity>(
                 RepositoryActivity.KEY_USER_LOGIN to repository.owner.login,
@@ -140,51 +206,8 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
     }
 
     private fun searchRepository(query: String) {
-        //REST API를 통해 검색 결과를 요청한다.
-        //'+=' 연산자로 디스포저블을 CompositeDisposable에 추가한다.
-        disposables += api.searchRepository(query)
-
-                //Observable 형태로 결과를 바꿔주기 위해 flatMap을 사용한다.
-                .flatMap {
-                    if(0 == it.totalCount){
-                        //검색 결과가 없을 경우, 에러를 발생시켜 에러 메시지를 표시하도록 한다.
-                        //곧바로 에러 블록이 실행된다.
-                        Observable.error(IllegalStateException("No search result"))
-                    }
-                    else{
-                        //검색 결과 리스트를 다음 스트림으로 전달한다.
-                        Observable.just(it.items)
-                    }
-                }
-
-                //이 이후에 수행되는 코드는 모두 메인 스레드에서 실행한다.
-                //RxAndroid에서 제공하는 스케줄러인 AndroidSchedulers.mainThread()를 사용한다.
-                .observeOn(AndroidSchedulers.mainThread())
-
-                //구독할 때 수행할 작업을 수행한다.
-                .doOnSubscribe {
-                    clearResults()
-                    hideError()
-                    showProgress()
-                }
-
-                //스트림이 종료될 때 수행할 작업을 구현한다.
-                .doOnTerminate { hideProgress() }
-
-                //옵저버블을 구독한다.
-                .subscribe({ items ->
-
-                    //API를 통해 검색 결과를 정상적으로 받았을 때 처리할 작업을 구현한다.
-                    //작업 중 오류가 발생하면 이 블록은 호출되지 않는다.
-                    with(adapter){
-                        setItems(items)
-                        notifyDataSetChanged()
-                    }
-                }){
-                    //에러 블록.
-                    //네트워크 오류나 데이터 처리 오류 등 작업이 정상적으로 완료되지 않았을 때 호출한다.
-                    showError(it.message)
-                }
+        //전달받은 검색어로 검색 결과를 요청.
+        disposables += viewModel.searchRepository(query)
     }
 
     private fun updateTitle(query: String) {
