@@ -21,7 +21,7 @@ class Some<out T: Any>(value: T): SupportOptional<T>(value)
 
 //SupportOptional 형태로 데이터를 감싸는 유틸리티 함수.
 //널 값이 아니라면 Some 클래스로, 널 값이라면 Empty 클래스로 감싼다.
-inline fun <reified T: Any>optionalOF(value: T?)
+inline fun <reified T: Any>optionalOf(value: T?)
         = if(null != value) Some(value) else Empty<T>()
 
 //Empty 클래스의 인스턴스를 간편하게 만들어주는 유틸리티 함수.

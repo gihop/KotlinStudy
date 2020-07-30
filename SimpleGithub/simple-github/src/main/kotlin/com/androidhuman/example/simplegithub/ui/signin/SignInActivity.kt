@@ -1,5 +1,6 @@
 package com.androidhuman.example.simplegithub.ui.signin
 
+import android.arch.lifecycle.ViewModelProviders
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -33,12 +34,29 @@ class SignInActivity : AppCompatActivity() {
     //val accessTokenCall: Call<GithubAccessToken>? = null 를 대체한다.
     //CompositeDisposable에서 AutoClearedDisposable로 변경한다.
     internal val disposables = AutoClearedDisposable(this)
+
+    //액티비티가 완전히 종료되기 전까지 이벤트를 계속 받기 위해 추가한다.
+    internal val viewDisposable = AutoClearedDisposable(lifecycleOwner = this, alwaysClearOnStop = false)
+
+    //SignInViewModel을 생성할 때 필요한 뷰모델 팩토리 클래스의 인스턴스를 생성한다.
+    internal val viewModelFactory by lazy { SignInViewModelFactory(provideAuthApi(), AuthTokenProvider(this))
+    }
+
+    //뷰모델의 인스턴스는 onCreate()에서 받으므로, lateinit으로 선언.
+    lateinit var viewModel: SignInViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sign_in)
 
+        //SignInViewModel의 인스턴스를 받는다.
+        viewModel = ViewModelProviders.of(this, viewModelFactory)[SignInViewModel::class.java]
+
         //Lifecycle.addObserver() 함수를 사용하여 AutoClearedDisposable 객체를 옵저버로 등록한다.
         lifecycle += disposables
+
+        //viewDisposables에서 이 액티비티의 생명주기 이벤트를 받도록 한다.
+        lifecycle += viewDisposable
 
         //View.OnClickListener의 본체를 람다 표현식으로 작성한다.
         //버튼 인스턴스 선언 없이 코틀린 익스텐션을 써서 뷰 ID로 인스턴스에 접근한다.
@@ -56,6 +74,34 @@ class SignInActivity : AppCompatActivity() {
         if (null != authTokenProvider.token) {
             launchMainActivity()
         }
+
+        //엑세스 토큰 이벤트를 구독한다.
+        viewDisposable += viewModel.accessToken
+                //엑세스 토큰이 없는 경우는 무시한다.
+                .filter { !it.isEmpty }
+                .observeOn(AndroidSchedulers.mainThread())
+                //엑세스 토큰이 있는 것을 확인했다면 메인 화면으로 이동한다.
+                .subscribe{ launchMainActivity() }
+
+        //에러 메시지 이벤트를 구독한다.
+        viewDisposable += viewModel.message
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe { message -> showError(message) }
+
+        //작업 진행 여부 이벤트를 구독한다.
+        viewDisposable += viewModel.isLoading
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe { isLoading ->
+                    //작업 진행 여부 이벤트에 따라 프로그레스바의 표시 상태를 변경한다.
+                    if(isLoading){
+                        showProgress()
+                    } else {
+                        hideProgress()
+                    }
+                }
+
+        //기기에 저장되어 있는 엑세스 토큰을 불러온다.
+        disposables += viewModel.loadAccessToken()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -83,35 +129,10 @@ class SignInActivity : AppCompatActivity() {
     }*/
 
     private fun getAccessToken(code: String) {
-        //REST API를 통해 엑세스 토큰을 요청한다.
-        //'+=' 연산자로 디스포저블을 CompositeDisposable에 추가한다.
-        disposables += api.getAccessToken(
-                BuildConfig.GITHUB_CLIENT_ID, BuildConfig.GITHUB_CLIENT_SECRET, code)
-
-                //REST API를 통해 받은 응답에서 엑세스 토큰만 추출한다.
-                .map{ it.accessToken }
-
-                //이 이후에 수행되는 코드는 모두 메인 스레드에서 실행한다.
-                //RxAndroid에서 제공하는 스케줄러인 AndroidSchedulers.mainThread()를 사용한다.
-                .observeOn(AndroidSchedulers.mainThread())
-
-                //구독할 때 수행할 작업을 구현한다.
-                .doOnSubscribe{ showProgress() }
-
-                //스트림이 종료될 때 수행할 작업을 구현한다.
-                .doOnTerminate{ hideProgress() }
-
-                //옵저버블을 구독한다.
-                .subscribe({ token ->
-                    //API를 통해 엑세스 토큰을 정상적으로 받았을 때 처리할 작업을 구현한다.
-                    //작업 중 오류가 발생하면 이 블록은 호출되지 않는다.
-                    authTokenProvider.updateToken(token)
-                    launchMainActivity()
-                }){
-                    //에러 블록.
-                    //네트워크 오류다 데이터 처리 오류 등 작업이 정상적으로 완료되지 않았을 때 호출된다.
-                    showError(it)
-                }
+        //ViewModel에 정의된 함수를 사용하여 새로운 액세스 토큰을 요청한다.
+        disposables += viewModel.requestAccessToken(
+                BuildConfig.GITHUB_CLIENT_ID,
+                BuildConfig.GITHUB_CLIENT_SECRET, code)
     }
 
     private fun showProgress() {
@@ -126,11 +147,8 @@ class SignInActivity : AppCompatActivity() {
         pbActivitySignIn.visibility = View.GONE
     }
 
-    private fun showError(throwable: Throwable) {
-        //긴 시간 동안 표시되는 토스트 메시지를 출력한다.
-        //longToast() 함수는 인자로 널 값을 허용하지 않으므로 throwable.message의 값이 널인 경우 대체하여 표시할
-        //문자열을 지정해준다.
-        longToast(throwable.message ?: "No message available")
+    private fun showError(message: String) {
+        longToast(message)
     }
 
     private fun launchMainActivity() {
