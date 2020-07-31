@@ -12,8 +12,8 @@
 6. [Anko](https://github.com/gihop/KotlinStudy/blob/master/Anko.md)
 7. [RxJava](https://github.com/gihop/KotlinStudy/blob/master/RxJava.md)
 8. [안드로이드 아키텍처 컴포넌트](https://github.com/gihop/KotlinStudy/blob/master/안드로이드%20아키텍처%20컴포넌트.md)
+9. [의존성 주입과 대거 라이브러리](https://github.com/gihop/KotlinStudy/blob/master/의존성%20주입과%20대거%20라이브러리.md)
 
 ## [SimpleGithub 프로젝트](https://github.com/gihop/KotlinStudy/tree/master/SimpleGithub)
 
 - Github API를 사용하여 저장소를 검색하고, 선택한 저장소에 대한 간단한 정보를 표시하는 기능을 제공하는 예제 프로젝트.
-
