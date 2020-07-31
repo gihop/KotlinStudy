@@ -27,6 +27,9 @@ class MainViewModel(val searchHistoryDao: SearchHistoryDao): ViewModel() {
                 if(optional.value.isEmpty()){
                     //표시할 데이터가 없는 경우, message 서브젝트를 통해 표시할 메시지를 전달한다.
                     message.onNext(optionalOf("No recent repositories."))
+                } else {
+                    //데이터가 있는 경우, 메시지를 표시하지 않는다.
+                    message.onNext(emptyOptional())
                 }
             }
 
