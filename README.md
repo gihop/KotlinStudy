@@ -1,6 +1,6 @@
 # KotlinStudy
 
-![imge](https://img.shields.io/badge/ProjectType-SingleStudy-green) ![imge](https://img.shields.io/badge/Language-kotlin-yellow) ![imge](https://img.shields.io/badge/Tools-Android Studio-blue)
+![imge](https://img.shields.io/badge/ProjectType-SingleStudy-green) ![imge](https://img.shields.io/badge/Language-kotlin-yellow) ![imge](https://img.shields.io/badge/Tools-AndroidStudio-blue)
 
 안드로이드 개발자로 성장하기 위한 kotlin 언어 공부.
 
