@@ -94,4 +94,19 @@ dependencies {
 
     //룸 라이브러리용 어노테이션 프로세서를 추가한다.
     kapt "android.arch.persistence.room:compiler:$archComponentVersion"
+
+    //대거의 기본 기능을 사용하기 위해 필요하다.
+    implementation "com.google.dagger:dagger:$daggerVersion"
+
+    //안드로이드에 특화된 대거의 기능을 사용하기 위해 필요하다.
+    implementation "com.google.dagger:dagger-android:$daggerVersion"
+
+    //안드로이드에 서포트 라이브러리를 지원하는 대거의 기능을 사용하기 위해 필요하다.
+    implementation "com.google.dagger:dagger-android-support:$daggerVersion"
+
+    //안드로이드에 특화된 대거의 기능을 처리해주는 어노테이션 프로세서.
+    kapt "com.google.dagger:dagger-android-processor:$daggerVersion"
+
+    //대거의 기본 기능(의존관계 분석 및 코드 생성)을 처리해주는 어노테이션 프로세서.
+    kapt "com.google.dagger:dagger-compiler:$daggerVersion"
 }
