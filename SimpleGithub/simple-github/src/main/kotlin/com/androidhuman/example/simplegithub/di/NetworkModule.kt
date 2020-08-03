@@ -2,6 +2,7 @@ package com.androidhuman.example.simplegithub.di
 
 import com.androidhuman.example.simplegithub.api.AuthInterceptor
 import com.androidhuman.example.simplegithub.data.AuthTokenProvider
+import dagger.Module
 import dagger.Provides
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -10,6 +11,7 @@ import javax.inject.Named
 import javax.inject.Singleton
 
 //모듈 클래스로 표시한다.
+@Module
 class NetworkModule {
     //"unauthorized"라는 이름으로 구분할 수 있는 OkHttpClient 객체를 제공한다.
     //여기에서 제공하는 OkHttpClient 객체는 요청에 인증 토큰을 추가하지 않는다.
