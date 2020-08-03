@@ -35,7 +35,7 @@ class NetworkModule {
             .addInterceptor(loggingInterceptor)
             .build()
 
-    //HttpLoggingInterceptor 객체를 젝공한다.
+    //HttpLoggingInterceptor 객체를 제공한다.
     @Provides
     @Singleton
     fun provideLoggingInterceptor(): HttpLoggingInterceptor
