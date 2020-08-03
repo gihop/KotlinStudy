@@ -6,18 +6,22 @@ import android.support.v7.app.AppCompatActivity
 import android.view.View
 import android.view.ViewOutlineProvider
 import com.androidhuman.example.simplegithub.R
+import com.androidhuman.example.simplegithub.api.GithubApi
 import com.androidhuman.example.simplegithub.api.provideGithubApi
 import com.androidhuman.example.simplegithub.ui.GlideApp
 import com.androidhuman.example.simplegithub.extensions.plusAssign
 import com.androidhuman.example.simplegithub.rx.AutoClearedDisposable
+import dagger.android.support.DaggerAppCompatActivity
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import kotlinx.android.synthetic.main.activity_repository.*
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
+import javax.inject.Inject
 
-class RepositoryActivity : AppCompatActivity() {
+//AppCompatActivity 대신 DaggerAppCompatActivity를 상속한다.
+class RepositoryActivity : DaggerAppCompatActivity() {
     //정적 필드로 정의되어 있던 항목은 동반 객체 내부에 정의된다.
     //액티비티 호출 시 필요한 데이터를 전달할 때 사용하는 키 값들을 정의한 동반 객체 내 프로퍼티는 클래스 가장 위로 위치를
     //옮겨주고, 각 프로퍼티에 const 키워드를 추가한다.
@@ -25,9 +29,6 @@ class RepositoryActivity : AppCompatActivity() {
         const val KEY_USER_LOGIN = "user_login"
         const val KEY_REPO_NAME = "repo_name"
     }
-
-    //lazy 프로퍼티로 전환한다.
-    internal val api by lazy { provideGithubApi(this) }
 
     //여러 디스포저블 객체를 관리할 수 있는 CompositeDisposable 객체를 초기화한다.
     //var repoCall: Call<GithubRepo>? = null 대신 사용한다.
@@ -37,9 +38,6 @@ class RepositoryActivity : AppCompatActivity() {
     //액티비티가 완전히 종료되기 전까지 이벤트를 계속 받기 위해 추가한다.
     internal val viewDisposables = AutoClearedDisposable(lifecycleOwner = this, alwaysClearOnStop = false)
 
-    //RepositoryViewModel을 생성하기 위해 필요한 뷰모델 팩토리 클래스의 인스턴스를 생성한다.
-    internal val viewModelFactory by lazy { RepositoryViewModelFactory(provideGithubApi(this)) }
-
     //뷰모델 인스턴스는 onCreate()에서 받으므로, lateinit으로 선언한다.
     lateinit var viewModel: RepositoryViewModel
 
@@ -48,6 +46,14 @@ class RepositoryActivity : AppCompatActivity() {
             "yyyy-MM-dd'T'HH:mm:ssX", Locale.getDefault())
     internal val dateFormatToShow = SimpleDateFormat(
             "yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+
+    internal val viewModelFactory by lazy{
+        //대거를 통해 주입받은 객체를 생성자의 인자로 전달한다.
+        RepositoryViewModelFactory(githubApi)
+    }
+
+    //대거를 통해 GithubApi를 주입받는 프로퍼티를 선언한다.
+    @Inject lateinit var githubApi: GithubApi
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

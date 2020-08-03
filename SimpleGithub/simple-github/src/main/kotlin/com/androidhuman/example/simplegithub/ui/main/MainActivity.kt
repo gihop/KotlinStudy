@@ -8,7 +8,9 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import com.androidhuman.example.simplegithub.R
+import com.androidhuman.example.simplegithub.api.GithubApi
 import com.androidhuman.example.simplegithub.api.model.GithubRepo
+import com.androidhuman.example.simplegithub.data.SearchHistoryDao
 import com.androidhuman.example.simplegithub.data.providerSearchHistoryDao
 import com.androidhuman.example.simplegithub.extensions.plusAssign
 import com.androidhuman.example.simplegithub.rx.AutoActivatedDisposable
@@ -16,20 +18,21 @@ import com.androidhuman.example.simplegithub.rx.AutoClearedDisposable
 import com.androidhuman.example.simplegithub.ui.repo.RepositoryActivity
 import com.androidhuman.example.simplegithub.ui.search.SearchActivity
 import com.androidhuman.example.simplegithub.ui.search.SearchAdapter
+import com.androidhuman.example.simplegithub.ui.search.SearchViewModelFactory
+import dagger.android.support.DaggerAppCompatActivity
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
 import org.jetbrains.anko.startActivity
+import javax.inject.Inject
 
 //SearchAdapter.ItemClickListener 인터페이스를 구현한다.
-class MainActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
+//AppCompatActivity 대신 DaggerAppCompatActivity를 상속한다.
+class MainActivity : DaggerAppCompatActivity(), SearchAdapter.ItemClickListener {
     //어댑터 프로퍼티를 추가한다.
     internal val adapter by lazy{
         SearchAdapter().apply { setItemClickListener(this@MainActivity) }
     }
-
-    //최근 조회한 저장소를 담당하는 데이터 접근 객체 프로퍼티를 추가한다.
-    internal val searchHistoryDao by lazy { providerSearchHistoryDao(this) }
 
     //디스포저블을 관리하는 프로퍼티를 추가한다.
     internal val disposables = AutoClearedDisposable(this)
@@ -37,11 +40,16 @@ class MainActivity : AppCompatActivity(), SearchAdapter.ItemClickListener {
     //액티비티가 완전히 종료되기 전까지 이벤트를 계속 받기 위해 추가한다.
     internal val viewDisposables = AutoClearedDisposable(lifecycleOwner = this, alwaysClearOnStop = false)
 
-    //MainViewModel을 생성하기 위해 필요한 뷰모델 팩토리 클래스의 인스턴스를 생성한다.
-    internal val viewModelFactory by lazy { MainViewModelFactory(providerSearchHistoryDao(this)) }
-
     //뷰모델의 인스턴스는 onCreate()에서 받으므로, lateinit으로 선언한다.
     lateinit var viewModel: MainViewModel
+
+    internal val viewModelFactory by lazy{
+        //대거를 통해 주입받은 객체를 생성자의 인자로 전달한다.
+        MainViewModelFactory(searchHistoryDao)
+    }
+
+    //대거를 통해 SearchHistoryDao를 주입받는 프로퍼티를 선언한다.
+    @Inject lateinit var searchHistoryDao: SearchHistoryDao
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

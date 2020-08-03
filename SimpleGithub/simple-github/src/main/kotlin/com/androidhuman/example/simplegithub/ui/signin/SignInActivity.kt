@@ -9,6 +9,7 @@ import android.support.v7.app.AppCompatActivity
 import android.view.View
 import com.androidhuman.example.simplegithub.BuildConfig
 import com.androidhuman.example.simplegithub.R
+import com.androidhuman.example.simplegithub.api.AuthApi
 import com.androidhuman.example.simplegithub.api.provideAuthApi
 import com.androidhuman.example.simplegithub.data.AuthTokenProvider
 import com.androidhuman.example.simplegithub.ui.main.MainActivity
@@ -21,15 +22,11 @@ import org.jetbrains.anko.longToast
 import org.jetbrains.anko.newTask
 import com.androidhuman.example.simplegithub.extensions.plusAssign
 import com.androidhuman.example.simplegithub.rx.AutoClearedDisposable
+import dagger.android.support.DaggerAppCompatActivity
+import javax.inject.Inject
 
-class SignInActivity : AppCompatActivity() {
-    //패키지 단위 함수를 호출한다.
-    //lazy 프로퍼티를 적용하기 위해 val로 바꾼다.
-    //프로퍼티를 사용하기 전에 초기화를 안해도 컴파일 에러가 발생하지 않는 lateinit보다 프로퍼티를 최초로 사용하는 시점에 초기화를 수행하는 lazy로 바꾼다.
-    //또한 프로퍼티 선언과 동시에 이에 들어갈 값을 넣어주므로, 타입 추론 기능을 사용할 수 있다.
-    internal val api by lazy { provideAuthApi() }
-    internal val authTokenProvider by lazy { AuthTokenProvider(this) }
-
+//대거 안드로이드 지원 모듈을 통해 필요한 객체를 주입할 수 있도록 DaggerAppCompatActivity를 상속하도록 변경.
+class SignInActivity : DaggerAppCompatActivity() {
     //여러 디스포저블 객체를 관리할 수 있는 CompositeDisposable 객체를 초기화한다.
     //val accessTokenCall: Call<GithubAccessToken>? = null 를 대체한다.
     //CompositeDisposable에서 AutoClearedDisposable로 변경한다.
@@ -38,12 +35,21 @@ class SignInActivity : AppCompatActivity() {
     //액티비티가 완전히 종료되기 전까지 이벤트를 계속 받기 위해 추가한다.
     internal val viewDisposables = AutoClearedDisposable(lifecycleOwner = this, alwaysClearOnStop = false)
 
-    //SignInViewModel을 생성할 때 필요한 뷰모델 팩토리 클래스의 인스턴스를 생성한다.
-    internal val viewModelFactory by lazy { SignInViewModelFactory(provideAuthApi(), AuthTokenProvider(this))
-    }
-
     //뷰모델의 인스턴스는 onCreate()에서 받으므로, lateinit으로 선언.
     lateinit var viewModel: SignInViewModel
+
+    internal val viewModelFactory by lazy{
+        //대거를 통해 주입받은 객체를 생성자의 인자로 전달한다.
+        SignInViewModelFactory(authApi, authTokenProvider)
+    }
+
+    //대거를 통해 AuthApi 객체를 주입받는 프로퍼티를 선언한다.
+    //@Inject 어노테이션을 추가해야 대거로부터 객체를 주입받을 수 있다.
+    //선언 시점에 프로퍼티를 초기화할 수 없으므로 lateinit var로 선언한다.
+    @Inject lateinit var authApi: AuthApi
+
+    //대거를 통해 AuthTokenProvider 객체를 주입받는 프로퍼티를 선언한다.
+    @Inject lateinit var authTokenProvider: AuthTokenProvider
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
