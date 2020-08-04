@@ -47,13 +47,8 @@ class RepositoryActivity : DaggerAppCompatActivity() {
     internal val dateFormatToShow = SimpleDateFormat(
             "yyyy-MM-dd HH:mm:ss", Locale.getDefault())
 
-    internal val viewModelFactory by lazy{
-        //대거를 통해 주입받은 객체를 생성자의 인자로 전달한다.
-        RepositoryViewModelFactory(githubApi)
-    }
-
-    //대거를 통해 GithubApi를 주입받는 프로퍼티를 선언한다.
-    @Inject lateinit var githubApi: GithubApi
+    //대거로부터 RepositoryViewModelFactory 객체를 주입받는다.
+    @Inject lateinit var viewModelFactory: RepositoryViewModelFactory
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
