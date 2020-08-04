@@ -19,7 +19,8 @@ abstract class ActivityBinder {
     abstract fun bindSignInActivity(): SignInActivity
 
     //MainActivity를 객체 그래프에 추가.
-    @ContributesAndroidInjector
+    //MainModule을 객체 그래프에 추가.
+    @ContributesAndroidInjector(modules = arrayOf(MainModule::class))
     abstract fun bindMainActivity(): MainActivity
 
     //SearchActivity를 객체 그래프에 추가.

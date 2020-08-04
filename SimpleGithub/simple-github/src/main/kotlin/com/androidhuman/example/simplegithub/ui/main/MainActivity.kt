@@ -29,11 +29,6 @@ import javax.inject.Inject
 //SearchAdapter.ItemClickListener 인터페이스를 구현한다.
 //AppCompatActivity 대신 DaggerAppCompatActivity를 상속한다.
 class MainActivity : DaggerAppCompatActivity(), SearchAdapter.ItemClickListener {
-    //어댑터 프로퍼티를 추가한다.
-    internal val adapter by lazy{
-        SearchAdapter().apply { setItemClickListener(this@MainActivity) }
-    }
-
     //디스포저블을 관리하는 프로퍼티를 추가한다.
     internal val disposables = AutoClearedDisposable(this)
 
@@ -43,13 +38,9 @@ class MainActivity : DaggerAppCompatActivity(), SearchAdapter.ItemClickListener 
     //뷰모델의 인스턴스는 onCreate()에서 받으므로, lateinit으로 선언한다.
     lateinit var viewModel: MainViewModel
 
-    internal val viewModelFactory by lazy{
-        //대거를 통해 주입받은 객체를 생성자의 인자로 전달한다.
-        MainViewModelFactory(searchHistoryDao)
-    }
+    @Inject lateinit var adapter: SearchAdapter
 
-    //대거를 통해 SearchHistoryDao를 주입받는 프로퍼티를 선언한다.
-    @Inject lateinit var searchHistoryDao: SearchHistoryDao
+    @Inject lateinit var viewModelFactory: MainViewModelFactory
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
