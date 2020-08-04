@@ -2,8 +2,6 @@ package com.androidhuman.example.simplegithub.extensions
 
 import com.androidhuman.example.simplegithub.rx.AutoClearedDisposable
 import io.reactivex.Completable
-import io.reactivex.Scheduler
-import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 

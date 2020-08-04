@@ -2,14 +2,11 @@ package com.androidhuman.example.simplegithub.api
 
 import android.content.Context
 import com.androidhuman.example.simplegithub.data.AuthTokenProvider
-import okhttp3.Interceptor
 import okhttp3.OkHttpClient
-import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
-import java.io.IOException
 
 //GithubApiProvider 클래스에 포함된 함수에서는 필요한 인자를 함수의 인자로 받기만 할 뿐, 클래스 단위에서 공용으로 사용하는 객체가 없다.
 //따라서 싱글톤 클래스를 제거하고 패키지 단위 함수로 다시 선언한다.

@@ -9,9 +9,7 @@ import android.view.ViewGroup
 import com.androidhuman.example.simplegithub.R
 import com.androidhuman.example.simplegithub.api.model.GithubRepo
 import com.androidhuman.example.simplegithub.ui.GlideApp
-import kotlinx.android.synthetic.main.activity_repository.view.*
 import kotlinx.android.synthetic.main.item_repository.view.*
-import java.util.*
 
 class SearchAdapter : RecyclerView.Adapter<SearchAdapter.RepositoryHolder>() {
     //ArrayList()를 사용하여 빈 MutableList를 할당하는 것보다 mutalbleListOf() 함수를 사용하여 mutalbleList를
