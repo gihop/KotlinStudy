@@ -24,7 +24,8 @@ abstract class ActivityBinder {
     abstract fun bindMainActivity(): MainActivity
 
     //SearchActivity를 객체 그래프에 추가.
-    @ContributesAndroidInjector
+    //SearchModule을 객체 그래프에 추가.
+    @ContributesAndroidInjector(modules = arrayOf(SearchModule::class))
     abstract fun bindSearchActivity(): SearchActivity
 
     //RepositoryActivity를 객체 그래프에 추가.

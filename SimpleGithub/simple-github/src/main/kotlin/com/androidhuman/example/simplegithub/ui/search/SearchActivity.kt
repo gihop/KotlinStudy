@@ -34,12 +34,6 @@ class SearchActivity : DaggerAppCompatActivity(), SearchAdapter.ItemClickListene
     internal lateinit var menuSearch: MenuItem
     internal lateinit var searchView: SearchView
 
-    //lazy 프로퍼티로 전환.
-    internal val adapter by lazy {
-        //apply() 함수를 사용하여 객체 생성과 함수 호출을 한번에 수행한다.
-        SearchAdapter().apply { setItemClickListener(this@SearchActivity) }
-    }
-
     //여러 디스포저블 객체를 관리할 수 있는 CompositeDisposable 객체를 초기화한다.
     //var searchCall: Call<RepoSearchResponse>? = null 대신해서 사용한다.
     //CompositeDisposable에서 AutoClearedDisposable로 변경한다.
@@ -55,16 +49,11 @@ class SearchActivity : DaggerAppCompatActivity(), SearchAdapter.ItemClickListene
     //뷰모델의 인스턴스는 onCreate()에서 받으므로, lateinit으로 선언.
     lateinit var viewModel: SearchViewModel
 
-    internal val viewModelFactory by lazy{
-        //대거를 통해 주입받은 객체를 생성자의 인자로 전달한다.
-        SearchViewModelFactory(githubApi, searchHistoryDao)
-    }
+    //대거로부터 SearchAdapter 객체를 주입받는다.
+    @Inject lateinit var adapter: SearchAdapter
 
-    //대거를 통해 GithubApi를 주입받는 프로퍼티를 선언한다.
-    @Inject lateinit var githubApi: GithubApi
-
-    //대거를 통해 SearchHistoryDao를 주입받는 프로퍼티를 선언한다.
-    @Inject lateinit var searchHistoryDao: SearchHistoryDao
+    //대거로부터 SearchViewModelFactory 객체를 주입받는다.
+    @Inject lateinit var viewModelFactory: SearchViewModelFactory
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
