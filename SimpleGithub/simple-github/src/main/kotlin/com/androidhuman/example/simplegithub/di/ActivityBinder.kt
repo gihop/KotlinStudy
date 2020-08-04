@@ -14,7 +14,8 @@ import dagger.android.ContributesAndroidInjector
 @Module
 abstract class ActivityBinder {
     //SignActivity를 객체 그래프에 추가.
-    @ContributesAndroidInjector
+    //SignInModule를 객체 그래프에 추가.
+    @ContributesAndroidInjector(modules = arrayOf(SignInModule::class))
     abstract fun bindSignInActivity(): SignInActivity
 
     //MainActivity를 객체 그래프에 추가.
